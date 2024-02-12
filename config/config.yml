@@ -1,0 +1,12 @@
+logger:
+  level: 'debug'
+  type: 'development'
+
+postgres:
+  url: 'host=localhost port=5432 user=postgres password=1 dbname=go_diploma sslmode=disable'
+
+http:
+  address: 'localhost:8080'
+
+accrual_http:
+  address: 'localhost:8081'
