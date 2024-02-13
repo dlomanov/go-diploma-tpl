@@ -1,7 +1,6 @@
 package deps
 
 import (
-	"context"
 	"github.com/dlomanov/go-diploma-tpl/config"
 	"github.com/dlomanov/go-diploma-tpl/pkg/logging"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -14,13 +13,13 @@ type Container struct {
 	DB     *sqlx.DB
 }
 
-func NewContainer(ctx context.Context, cfg *config.Config) (*Container, error) {
+func NewContainer(cfg *config.Config) (*Container, error) {
 	logger, err := logging.NewLogger(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	db, err := sqlx.ConnectContext(ctx, "pgx", cfg.PG.DatabaseURI)
+	db, err := sqlx.Connect("pgx", cfg.PG.DatabaseURI)
 	if err != nil {
 		return nil, err
 	}

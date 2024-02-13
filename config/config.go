@@ -2,7 +2,6 @@ package config
 
 import (
 	"embed"
-	_ "embed"
 	"flag"
 	"github.com/ilyakaznacheev/cleanenv"
 	"io/fs"
@@ -38,7 +37,7 @@ type (
 
 const (
 	LoggerTypeDevelopment LoggerType = "development"
-	LoggerTypeProduction             = "production"
+	LoggerTypeProduction  LoggerType = "production"
 )
 
 //go:embed config.yml
