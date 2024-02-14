@@ -1,3 +1,8 @@
+app:
+  pass_hash_cost: 5
+  token_secret_key: "fb3299df-48c6-4fa3-9a72-b80f2a5a79f6"
+  token_expires: "15m"
+
 logger:
   level: 'debug'
   type: 'development'

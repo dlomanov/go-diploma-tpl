@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"embed"
+	"github.com/go-errors/errors"
 )
 
 type Migration struct {
@@ -19,7 +20,7 @@ type file struct {
 //go:embed *
 var fs embed.FS
 var files = []file{
-	{Name: "m0001.sql", Title: "M0001: First migrator", NoTx: false},
+	{Name: "m0001.sql", Title: "M0001: Table users", NoTx: false},
 }
 
 func GetMigrations() ([]Migration, error) {
@@ -28,7 +29,7 @@ func GetMigrations() ([]Migration, error) {
 	for i, f := range files {
 		query, err := fs.ReadFile(f.Name)
 		if err != nil {
-			return nil, err
+			return nil, errors.New(err)
 		}
 
 		result[i] = Migration{

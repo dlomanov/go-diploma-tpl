@@ -3,9 +3,10 @@ package app
 import (
 	"github.com/dlomanov/go-diploma-tpl/config"
 	"github.com/dlomanov/go-diploma-tpl/internal/deps"
+	"github.com/dlomanov/go-diploma-tpl/internal/entrypoints/http/v1"
 	"github.com/dlomanov/go-diploma-tpl/pkg/httpserver"
+	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,8 +22,10 @@ func Run(cfg *config.Config) error {
 
 	log := c.Logger
 
+	r := chi.NewRouter()
+	v1.NewRouter(r, c)
 	server := httpserver.New(
-		http.NewServeMux(),
+		r,
 		httpserver.Addr(cfg.HTTP.RunAddress),
 		httpserver.ShutdownTimeout(15*time.Second))
 	log.Debug("server started")

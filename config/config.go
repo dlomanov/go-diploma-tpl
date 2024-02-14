@@ -6,14 +6,22 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 	"io/fs"
 	"os"
+	"time"
 )
 
 type (
 	Config struct {
+		App         `yaml:"app"`
 		Log         `yaml:"logger"`
 		PG          `yaml:"postgres"`
 		HTTP        `yaml:"http"`
 		AccrualHTTP `yaml:"accrual_http"`
+	}
+
+	App struct {
+		PassHashCost   int           `yaml:"pass_hash_cost" env:"PASS_HASH_COST"`
+		TokenSecretKey string        `yaml:"token_secret_key" env:"TOKEN_SECRET_KEY"`
+		TokenExpires   time.Duration `yaml:"token_expires" env:"TOKEN_EXPIRES"`
 	}
 
 	Log struct {

@@ -3,6 +3,7 @@ package migrator
 import (
 	"database/sql"
 	"github.com/dlomanov/go-diploma-tpl/migrations"
+	"github.com/go-errors/errors"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/lopezator/migrator"
 	"go.uber.org/zap"
@@ -13,16 +14,16 @@ const migrationTable = "__migrations"
 func Migrate(databaseURI string, sugar *zap.SugaredLogger) error {
 	db, err := sql.Open("pgx", databaseURI)
 	if err != nil {
-		return err
+		return errors.New(err)
 	}
 	defer func(db *sql.DB) { _ = db.Close() }(db)
 	if err = db.Ping(); err != nil {
-		return err
+		return errors.New(err)
 	}
 
 	ms, err := getMigrations()
 	if err != nil {
-		return err
+		return errors.New(err)
 	}
 
 	logger := migrator.LoggerFunc(func(msg string, args ...interface{}) { sugar.Info(msg, args) })
@@ -32,7 +33,7 @@ func Migrate(databaseURI string, sugar *zap.SugaredLogger) error {
 		migrator.TableName(migrationTable),
 	)
 	if err != nil {
-		return err
+		return errors.New(err)
 	}
 	return m.Migrate(db)
 }

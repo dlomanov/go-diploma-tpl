@@ -2,6 +2,10 @@ package deps
 
 import (
 	"github.com/dlomanov/go-diploma-tpl/config"
+	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
+	"github.com/dlomanov/go-diploma-tpl/internal/usecase/pass"
+	"github.com/dlomanov/go-diploma-tpl/internal/usecase/repo"
+	"github.com/dlomanov/go-diploma-tpl/internal/usecase/token"
 	"github.com/dlomanov/go-diploma-tpl/pkg/logging"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
@@ -9,8 +13,9 @@ import (
 )
 
 type Container struct {
-	Logger *zap.Logger
-	DB     *sqlx.DB
+	Logger      *zap.Logger
+	DB          *sqlx.DB
+	AuthUseCase *usecase.AuthUseCase
 }
 
 func NewContainer(cfg *config.Config) (*Container, error) {
@@ -24,9 +29,15 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		return nil, err
 	}
 
+	userRepo := repo.NewUser(db)
+	hasher := pass.NewHasher(cfg.App.PassHashCost)
+	tokener := token.NewJWT([]byte(cfg.App.TokenSecretKey), cfg.App.TokenExpires)
+	authUseCase := usecase.NewAuth(userRepo, hasher, tokener)
+
 	return &Container{
-		Logger: logger,
-		DB:     db,
+		Logger:      logger,
+		DB:          db,
+		AuthUseCase: authUseCase,
 	}, nil
 }
 
