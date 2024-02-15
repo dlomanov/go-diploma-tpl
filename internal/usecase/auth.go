@@ -34,6 +34,10 @@ func (uc *AuthUseCase) Register(
 	ctx context.Context,
 	creds entity.Creds,
 ) (token entity.Token, err error) {
+	if creds.Login == "" || creds.Pass == "" {
+		return token, errors.New(ErrAuthUserInvalidCreds)
+	}
+
 	exists, err := uc.userRepo.Exists(ctx, creds.Login)
 	if err != nil {
 		return token, err
@@ -67,6 +71,10 @@ func (uc *AuthUseCase) Login(
 	ctx context.Context,
 	creds entity.Creds,
 ) (token entity.Token, err error) {
+	if creds.Login == "" || creds.Pass == "" {
+		return token, errors.New(ErrAuthUserInvalidCreds)
+	}
+
 	user, err := uc.userRepo.Get(ctx, creds.Login)
 	if err != nil {
 		return token, err

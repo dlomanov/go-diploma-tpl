@@ -16,7 +16,7 @@ import (
 const (
 	AuthorizationHeader = "Authorization"
 	ContentTypeHeader   = "Content-Type"
-	ContentTypeJson     = "application/json"
+	ContentTypeJSON     = "application/json"
 )
 
 type endpoints struct {
@@ -35,7 +35,7 @@ func UseAuthEndpoints(router chi.Router, c *deps.Container) {
 }
 
 func (e *endpoints) Register(w http.ResponseWriter, r *http.Request) {
-	if h, ok := get(ContentTypeJson, r); !ok {
+	if h, ok := get(ContentTypeJSON, r); !ok {
 		e.logger.Debug("unsupported content type", zap.String("content_type", h))
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -69,7 +69,7 @@ func (e *endpoints) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (e *endpoints) Login(w http.ResponseWriter, r *http.Request) {
-	if h, ok := get(ContentTypeJson, r); !ok {
+	if h, ok := get(ContentTypeJSON, r); !ok {
 		e.logger.Debug("unsupported content type", zap.String("content_type", h))
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -153,7 +153,7 @@ func get(contentType string, r *http.Request) (string, bool) {
 
 func (e *endpoints) writeInvalid(w http.ResponseWriter, errs []error) {
 	e.logger.Debug("validation failed", zap.Errors("validation_errors", errs))
-	w.Header().Set(ContentTypeHeader, ContentTypeJson)
+	w.Header().Set(ContentTypeHeader, ContentTypeJSON)
 	w.WriteHeader(http.StatusBadRequest)
 	resp := newResponse(errs)
 	err := json.NewEncoder(w).Encode(resp)
