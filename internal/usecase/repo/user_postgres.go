@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"database/sql"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	"github.com/go-errors/errors"
@@ -23,7 +24,7 @@ func NewUser(db *sqlx.DB) *UserRepo {
 }
 
 func (r *UserRepo) Exists(ctx context.Context, login entity.Login) (result bool, err error) {
-	row := r.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE login = $1)`, login)
+	row := r.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE login = $1);`, login)
 	if err = row.Err(); err != nil {
 		return false, errors.New(err)
 	}
@@ -33,6 +34,29 @@ func (r *UserRepo) Exists(ctx context.Context, login entity.Login) (result bool,
 	}
 
 	return result, nil
+}
+
+func (r *UserRepo) Get(ctx context.Context, login entity.Login) (user entity.User, err error) {
+	model := struct {
+		ID       uuid.UUID `db:"id"`
+		Login    string    `db:"login"`
+		PassHash string    `db:"pass_hash"`
+	}{}
+
+	err = r.db.GetContext(ctx, &model, `SELECT id, login, pass_hash FROM users WHERE login = $1;`, login)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return user, errors.New(usecase.ErrAuthUserNotFound)
+		default:
+			return user, errors.New(err)
+		}
+	}
+
+	user.ID = entity.UserID(model.ID)
+	user.Login = entity.Login(model.Login)
+	user.PassHash = entity.PassHash(model.PassHash)
+	return user, nil
 }
 
 func (r *UserRepo) Create(ctx context.Context, creds entity.HashCreds) (entity.UserID, error) {

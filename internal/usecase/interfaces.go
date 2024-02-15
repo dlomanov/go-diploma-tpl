@@ -7,6 +7,7 @@ import (
 
 type UserRepo interface {
 	Exists(ctx context.Context, login entity.Login) (bool, error)
+	Get(ctx context.Context, login entity.Login) (entity.User, error)
 	Create(ctx context.Context, creds entity.HashCreds) (entity.UserID, error)
 }
 
