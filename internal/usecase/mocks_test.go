@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
-	"github.com/go-errors/errors"
 	"github.com/google/uuid"
 	"sync"
 )
@@ -31,7 +30,7 @@ func (u *MockUserRepo) Exists(_ context.Context, login entity.Login) (bool, erro
 func (u *MockUserRepo) Get(_ context.Context, login entity.Login) (entity.User, error) {
 	user, ok := u.get(login)
 	if !ok {
-		return entity.User{}, errors.New(usecase.ErrAuthUserNotFound)
+		return entity.User{}, usecase.ErrAuthUserNotFound
 	}
 
 	return user, nil
@@ -40,11 +39,11 @@ func (u *MockUserRepo) Get(_ context.Context, login entity.Login) (entity.User, 
 func (u *MockUserRepo) Create(_ context.Context, creds entity.HashCreds) (entity.UserID, error) {
 	id, err := uuid.NewUUID()
 	if err != nil {
-		return entity.UserID{}, errors.New(err)
+		return entity.UserID{}, err
 	}
 
 	if _, ok := u.get(creds.Login); ok {
-		return entity.UserID{}, errors.New(usecase.ErrAuthUserExists)
+		return entity.UserID{}, usecase.ErrAuthUserExists
 	}
 
 	user := entity.User{
@@ -55,7 +54,7 @@ func (u *MockUserRepo) Create(_ context.Context, creds entity.HashCreds) (entity
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	if _, ok := u.storage[creds.Login]; ok {
-		return entity.UserID{}, errors.New(usecase.ErrAuthUserExists)
+		return entity.UserID{}, usecase.ErrAuthUserExists
 	}
 	u.storage[creds.Login] = user
 

@@ -2,11 +2,11 @@ package usecase_test
 
 import (
 	"context"
+	"errors"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase/pass"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase/token"
-	"github.com/go-errors/errors"
 	"testing"
 	"time"
 )

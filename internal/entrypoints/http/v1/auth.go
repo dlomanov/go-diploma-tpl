@@ -2,12 +2,12 @@ package v1
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/dlomanov/go-diploma-tpl/internal/deps"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-errors/errors"
 	"go.uber.org/zap"
 	"net/http"
 	"strings"

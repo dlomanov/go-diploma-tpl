@@ -2,11 +2,11 @@ package deps
 
 import (
 	"github.com/dlomanov/go-diploma-tpl/config"
+	"github.com/dlomanov/go-diploma-tpl/internal/pkg/logging"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase/pass"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase/repo"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase/token"
-	"github.com/dlomanov/go-diploma-tpl/pkg/logging"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
@@ -15,6 +15,7 @@ import (
 type Container struct {
 	Logger      *zap.Logger
 	DB          *sqlx.DB
+	Tokener     usecase.Tokener
 	AuthUseCase *usecase.AuthUseCase
 }
 
@@ -37,6 +38,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	return &Container{
 		Logger:      logger,
 		DB:          db,
+		Tokener:     tokener,
 		AuthUseCase: authUseCase,
 	}, nil
 }

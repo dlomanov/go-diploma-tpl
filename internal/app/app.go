@@ -4,7 +4,7 @@ import (
 	"github.com/dlomanov/go-diploma-tpl/config"
 	"github.com/dlomanov/go-diploma-tpl/internal/deps"
 	"github.com/dlomanov/go-diploma-tpl/internal/entrypoints/http/v1"
-	"github.com/dlomanov/go-diploma-tpl/pkg/httpserver"
+	httpserver2 "github.com/dlomanov/go-diploma-tpl/internal/pkg/httpserver"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"os"
@@ -24,10 +24,10 @@ func Run(cfg *config.Config) error {
 
 	r := chi.NewRouter()
 	v1.NewRouter(r, c)
-	server := httpserver.New(
+	server := httpserver2.New(
 		r,
-		httpserver.Addr(cfg.HTTP.RunAddress),
-		httpserver.ShutdownTimeout(15*time.Second))
+		httpserver2.Addr(cfg.HTTP.RunAddress),
+		httpserver2.ShutdownTimeout(15*time.Second))
 	log.Debug("server started")
 
 	terminate := make(chan os.Signal, 1)

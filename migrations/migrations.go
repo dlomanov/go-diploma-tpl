@@ -2,7 +2,6 @@ package migrations
 
 import (
 	"embed"
-	"github.com/go-errors/errors"
 )
 
 type Migration struct {
@@ -29,7 +28,7 @@ func GetMigrations() ([]Migration, error) {
 	for i, f := range files {
 		query, err := fs.ReadFile(f.Name)
 		if err != nil {
-			return nil, errors.New(err)
+			return nil, err
 		}
 
 		result[i] = Migration{

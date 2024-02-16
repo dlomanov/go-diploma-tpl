@@ -3,14 +3,13 @@ package logging
 import (
 	"fmt"
 	"github.com/dlomanov/go-diploma-tpl/config"
-	"github.com/go-errors/errors"
 	"go.uber.org/zap"
 )
 
 func NewLogger(cfg *config.Config) (*zap.Logger, error) {
 	lvl, err := zap.ParseAtomicLevel(cfg.Log.Level)
 	if err != nil {
-		return nil, errors.New(err)
+		return nil, err
 	}
 
 	var c zap.Config

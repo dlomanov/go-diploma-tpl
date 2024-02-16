@@ -2,7 +2,13 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
+)
+
+var (
+	ErrTokenInvalid = errors.New("invalid token")
+	ErrTokenExpired = errors.New("token expired")
 )
 
 type UserRepo interface {
@@ -17,6 +23,6 @@ type PassHasher interface {
 }
 
 type Tokener interface {
-	Create(ctx context.Context, id entity.UserID) (entity.Token, error)
-	GetUserID(ctx context.Context, token entity.Token) (entity.UserID, error)
+	Create(id entity.UserID) (entity.Token, error)
+	GetUserID(token entity.Token) (entity.UserID, error)
 }
