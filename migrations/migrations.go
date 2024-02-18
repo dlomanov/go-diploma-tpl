@@ -19,7 +19,9 @@ type file struct {
 //go:embed *
 var fs embed.FS
 var files = []file{
-	{Name: "m0001.sql", Title: "M0001: Table users", NoTx: false},
+	{Name: "m0001.sql", Title: "M0001: Users table", NoTx: false},
+	{Name: "m0002.sql", Title: "M0002: Balances table", NoTx: false},
+	{Name: "m0003.sql", Title: "M0003: Orders table", NoTx: false},
 }
 
 func GetMigrations() ([]Migration, error) {

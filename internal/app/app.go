@@ -4,7 +4,7 @@ import (
 	"github.com/dlomanov/go-diploma-tpl/config"
 	"github.com/dlomanov/go-diploma-tpl/internal/deps"
 	"github.com/dlomanov/go-diploma-tpl/internal/entrypoints/http/v1"
-	httpserver2 "github.com/dlomanov/go-diploma-tpl/internal/pkg/httpserver"
+	httpserver2 "github.com/dlomanov/go-diploma-tpl/internal/infra/httpserver"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"os"

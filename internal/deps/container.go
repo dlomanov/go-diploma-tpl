@@ -1,12 +1,14 @@
 package deps
 
 import (
+	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
+	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/dlomanov/go-diploma-tpl/config"
-	"github.com/dlomanov/go-diploma-tpl/internal/pkg/logging"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/algo/pass"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/algo/token"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/logging"
+	repo2 "github.com/dlomanov/go-diploma-tpl/internal/infra/repo"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
-	"github.com/dlomanov/go-diploma-tpl/internal/usecase/pass"
-	"github.com/dlomanov/go-diploma-tpl/internal/usecase/repo"
-	"github.com/dlomanov/go-diploma-tpl/internal/usecase/token"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
@@ -17,6 +19,7 @@ type Container struct {
 	DB          *sqlx.DB
 	Tokener     usecase.Tokener
 	AuthUseCase *usecase.AuthUseCase
+	Tx          *manager.Manager
 }
 
 func NewContainer(cfg *config.Config) (*Container, error) {
@@ -30,16 +33,23 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		return nil, err
 	}
 
-	userRepo := repo.NewUser(db)
+	trm, err := manager.New(trmsqlx.NewDefaultFactory(db))
+	if err != nil {
+		return nil, err
+	}
+
+	userRepo := repo2.NewUserRepo(db, trmsqlx.DefaultCtxGetter)
+	balanceRepo := repo2.NewBalanceRepo(db, trmsqlx.DefaultCtxGetter)
 	hasher := pass.NewHasher(cfg.App.PassHashCost)
 	tokener := token.NewJWT([]byte(cfg.App.TokenSecretKey), cfg.App.TokenExpires)
-	authUseCase := usecase.NewAuth(userRepo, hasher, tokener)
+	authUseCase := usecase.NewAuthUseCase(userRepo, balanceRepo, hasher, tokener, trm)
 
 	return &Container{
 		Logger:      logger,
 		DB:          db,
 		Tokener:     tokener,
 		AuthUseCase: authUseCase,
+		Tx:          trm,
 	}, nil
 }
 

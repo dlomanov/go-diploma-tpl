@@ -51,7 +51,7 @@ func (t JWTTokener) GetUserID(token entity.Token) (entity.UserID, error) {
 
 	value, err := jwt.ParseWithClaims(string(token), c, func(token *jwt.Token) (any, error) {
 		if m, ok := token.Method.(*jwt.SigningMethodHMAC); !ok || m.Name != method.Name {
-			return nil, fmt.Errorf("%w unexpected signing method: %v", usecase.ErrTokenInvalid, token.Header["alg"])
+			return nil, fmt.Errorf("%w unexpected signing method: %v", usecase.ErrAuthTokenInvalid, token.Header["alg"])
 		}
 		return t.secret, nil
 	})
@@ -59,13 +59,13 @@ func (t JWTTokener) GetUserID(token entity.Token) (entity.UserID, error) {
 		return entity.UserID{}, err
 	}
 	if !value.Valid {
-		return entity.UserID{}, usecase.ErrTokenInvalid
+		return entity.UserID{}, usecase.ErrAuthTokenInvalid
 	}
 
 	expires := c.ExpiresAt.UTC()
 	now := time.Now().UTC()
 	if expires.Compare(now) == -1 {
-		return entity.UserID{}, usecase.ErrTokenExpired
+		return entity.UserID{}, usecase.ErrAuthTokenExpired
 	}
 
 	id, err := uuid.Parse(c.UserID)

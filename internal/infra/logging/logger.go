@@ -17,7 +17,7 @@ func NewLogger(cfg *config.Config) (*zap.Logger, error) {
 	case config.LoggerTypeDevelopment:
 		c = zap.NewDevelopmentConfig()
 	case config.LoggerTypeProduction:
-		c = zap.NewDevelopmentConfig()
+		c = zap.NewProductionConfig()
 	default:
 		return nil, fmt.Errorf("unknown logger type %s", cfg.Log.Type)
 	}
