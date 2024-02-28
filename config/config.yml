@@ -15,3 +15,9 @@ http:
 
 accrual_http:
   address: 'localhost:8081'
+
+pipeline:
+  buffer_size: 10
+  shutdown_timeout: "3s"
+  poll_delay: "5s"
+  fix_delay: "5m"

@@ -12,10 +12,11 @@ import (
 type (
 	Config struct {
 		App         `yaml:"app"`
-		Log         `yaml:"logger"`
+		Logger      `yaml:"logger"`
 		PG          `yaml:"postgres"`
 		HTTP        `yaml:"http"`
 		AccrualHTTP `yaml:"accrual_http"`
+		Pipeline    `yaml:"pipeline"`
 	}
 
 	App struct {
@@ -24,9 +25,9 @@ type (
 		TokenExpires   time.Duration `yaml:"token_expires" env:"TOKEN_EXPIRES"`
 	}
 
-	Log struct {
-		Type  LoggerType `yaml:"type" env:"LOG_TYPE"`
-		Level string     `yaml:"level" env:"LOG_LEVEL"`
+	Logger struct {
+		LoggerType LoggerType `yaml:"type" env:"LOGGER_TYPE"`
+		LogLevel   string     `yaml:"level" env:"LOG_LEVEL"`
 	}
 	LoggerType string
 
@@ -39,7 +40,14 @@ type (
 	}
 
 	AccrualHTTP struct {
-		Address string `yaml:"address" env:"ACCRUAL_SYSTEM_ADDRESS"`
+		AccrualAddress string `yaml:"address" env:"ACCRUAL_SYSTEM_ADDRESS"`
+	}
+
+	Pipeline struct {
+		PipelineBufferSize      uint          `yaml:"buffer_size" env:"PIPELINE_BUFFER_SIZE"`
+		PipelineShutdownTimeout time.Duration `yaml:"shutdown_timeout" env:"PIPELINE_SHUTDOWN_TIMEOUT"`
+		PipelinePollDelay       time.Duration `yaml:"poll_delay" env:"PIPELINE_POLL_DELAY"`
+		PipelineFixDelay        time.Duration `yaml:"fix_delay" env:"PIPELINE_FIX_DELAY"`
 	}
 )
 
@@ -69,7 +77,7 @@ func NewConfig() (*Config, error) {
 
 	f := flag.NewFlagSet("", flag.ContinueOnError)
 	f.StringVar(&cfg.HTTP.RunAddress, "a", cfg.HTTP.RunAddress, "service run address and port")
-	f.StringVar(&cfg.AccrualHTTP.Address, "r", cfg.AccrualHTTP.Address, "accrual system address")
+	f.StringVar(&cfg.AccrualHTTP.AccrualAddress, "r", cfg.AccrualHTTP.AccrualAddress, "accrual system address")
 	f.StringVar(&cfg.PG.DatabaseURI, "d", cfg.PG.DatabaseURI, "postgres database uri")
 	err := f.Parse(os.Args[1:])
 	if err != nil {

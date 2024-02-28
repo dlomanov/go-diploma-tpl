@@ -22,6 +22,7 @@ var files = []file{
 	{Name: "m0001.sql", Title: "M0001: Users table", NoTx: false},
 	{Name: "m0002.sql", Title: "M0002: Balances table", NoTx: false},
 	{Name: "m0003.sql", Title: "M0003: Orders table", NoTx: false},
+	{Name: "m0004.sql", Title: "M0004: Tasks table", NoTx: false},
 }
 
 func GetMigrations() ([]Migration, error) {

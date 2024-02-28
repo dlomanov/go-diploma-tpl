@@ -75,7 +75,10 @@ func (r *OrderRepo) Get(
 	return oRow.toEntity()
 }
 
-func (r *OrderRepo) GetAll(ctx context.Context, filter *usecase.OrderFilter) ([]entity.Order, error) {
+func (r *OrderRepo) GetAll(
+	ctx context.Context,
+	filter *usecase.OrderFilter,
+) ([]entity.Order, error) {
 	db := r.getDB(ctx)
 	oRows := make(orderRows, 0)
 
@@ -108,7 +111,8 @@ func (r *OrderRepo) GetAll(ctx context.Context, filter *usecase.OrderFilter) ([]
 			updated_at
 		FROM orders
 		WHERE ($1 isnull OR $1 = type)
-		  AND ($2 isnull OR $2 = user_id);`, args)
+		  AND ($2 isnull OR $2 = user_id)
+		ORDER BY created_at;`, args)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

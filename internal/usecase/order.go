@@ -3,13 +3,9 @@ package usecase
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/avito-tech/go-transaction-manager/trm/v2"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
-)
-
-const (
-	OrderEventCreated OrderEvent = "order_event_created"
+	"github.com/google/uuid"
 )
 
 var (
@@ -23,11 +19,12 @@ var (
 
 type (
 	OrderUseCase struct {
-		orderRepo   OrderRepo
-		balanceRepo BalanceRepo
-		validator   OrderValidator
-		tx          trm.Manager
-		publisher   OrderPublisher
+		orderRepo     OrderRepo
+		balanceRepo   BalanceRepo
+		validator     OrderValidator
+		accrualAPI    OrderAccrualAPI
+		backgroundJob BackgroundJob
+		tx            trm.Manager
 	}
 	OrderRepo interface {
 		Get(ctx context.Context, id entity.OrderID) (entity.Order, error)
@@ -42,24 +39,24 @@ type (
 	OrderValidator interface {
 		ValidateNumber(number entity.OrderNumber) bool
 	}
-	OrderPublisher interface {
-		Publish(ctx context.Context, event OrderEvent, order entity.Order) error
+	OrderAccrualAPI interface {
+		Get(ctx context.Context, number entity.OrderNumber) (entity.OrderAccrual, error)
 	}
-	OrderEvent entity.Event
+	BackgroundJob interface {
+		Enqueue(entityID uuid.UUID, jobType entity.JobType) error
+	}
 )
 
 func NewOrderUseCase(
 	orderRepo OrderRepo,
 	balanceRepo BalanceRepo,
 	validator OrderValidator,
-	publisher OrderPublisher,
 	tx trm.Manager,
 ) *OrderUseCase {
 	return &OrderUseCase{
 		orderRepo:   orderRepo,
 		balanceRepo: balanceRepo,
 		validator:   validator,
-		publisher:   publisher,
 		tx:          tx,
 	}
 }
@@ -82,7 +79,7 @@ func (uc *OrderUseCase) Save(
 		if err = uc.orderRepo.Save(ctx, *order); err != nil {
 			return err
 		}
-		return uc.publisher.Publish(ctx, OrderEventCreated, *order)
+		return uc.backgroundJob.Enqueue(uuid.UUID(order.ID), entity.JobTypePollAccrual)
 	})
 	if err != nil {
 		return entity.Order{}, err
@@ -91,49 +88,38 @@ func (uc *OrderUseCase) Save(
 	return *order, nil
 }
 
-func (uc *OrderUseCase) Update(
+func (uc *OrderUseCase) UpdateAccrual(
 	ctx context.Context,
 	orderID entity.OrderID,
-	status entity.OrderStatus,
-	accrual entity.Amount,
-) error {
-	if !status.Valid() {
-		return fmt.Errorf("%w unkown status %s", ErrOrderStatusInvalid, status)
-	}
-
+) (entity.OrderEvent, error) {
 	order, err := uc.orderRepo.Get(ctx, orderID)
 	if err != nil {
-		return err
+		return "", err
+	}
+	accrual, err := uc.accrualAPI.Get(ctx, order.Number)
+	if err != nil {
+		return "", err
 	}
 
-	if err = order.Update(status, accrual); err != nil {
-		return err
+	if err = order.Update(accrual); err != nil {
+		return "", err
 	}
 
 	es := order.Events
-	if es.Empty() {
-		return nil
-	}
-
 	switch {
-	case es.Contains(entity.OrderEventUpdated):
-		return uc.orderRepo.Update(ctx, order)
-	case es.Contains(entity.OrderEventCompleted):
-		return uc.tx.Do(ctx, func(ctx context.Context) error {
-			balance, err := uc.balanceRepo.Get(ctx, order.UserID)
-			if err != nil {
-				return err
-			}
-			if err = balance.Update(order); err != nil {
-				return err
-			}
-			if err = uc.orderRepo.Update(ctx, order); err != nil {
-				return err
-			}
-			return uc.balanceRepo.Update(ctx, balance)
-		})
+	case es.Contains(entity.Event(entity.OrderEventUpdated)):
+		if err = uc.orderRepo.Update(ctx, order); err != nil {
+			return "", err
+		}
+		return entity.OrderEventUpdated, nil
+	case es.Contains(entity.Event(entity.OrderEventCompleted)):
+		err = uc.completeOrder(ctx, order)
+		if err != nil {
+			return "", err
+		}
+		return entity.OrderEventCompleted, nil
 	default:
-		return fmt.Errorf("unexpected order event %v", es)
+		return "", entity.ErrOrderEventInvalid
 	}
 }
 
@@ -142,4 +128,27 @@ func (uc *OrderUseCase) GetAll(
 	userID entity.UserID,
 ) ([]entity.Order, error) {
 	return uc.orderRepo.GetAll(ctx, &OrderFilter{UserID: &userID})
+}
+
+func (uc *OrderUseCase) completeOrder(
+	ctx context.Context,
+	order entity.Order,
+) error {
+	return uc.tx.Do(ctx, func(ctx context.Context) error {
+		balance, err := uc.balanceRepo.Get(ctx, order.UserID)
+		if err != nil {
+			return err
+		}
+		if err = balance.Update(order); err != nil {
+			return err
+		}
+		if err = uc.orderRepo.Update(ctx, order); err != nil {
+			return err
+		}
+		if err = uc.balanceRepo.Update(ctx, balance); err != nil {
+			return err
+		}
+		return nil
+	})
+
 }

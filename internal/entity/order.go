@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	OrderEventUpdated   Event = "order_event_status_updated"
-	OrderEventCompleted Event = "order_event_accrual_updated"
+	OrderEventUpdated   OrderEvent = "order_event_status_updated"
+	OrderEventCompleted OrderEvent = "order_event_accrual_updated"
 )
 
 const (
@@ -35,15 +35,21 @@ var (
 	ErrOrderNegativeAmount = errors.New("order amount should be positive")
 	ErrOrderTypeInvalid    = errors.New("invalid order type")
 	ErrOrderStatusInvalid  = errors.New("invalid order status")
+	ErrOrderEventInvalid   = errors.New("invalid order event")
 	ErrOrderStatusFinal    = fmt.Errorf("%w: attempted update on order in final status", ErrOrderStatusInvalid)
 )
 
 type (
-	OrderNumber string
-	OrderID     uuid.UUID
-	OrderStatus string
-	OrderType   string
-	Order       struct {
+	OrderNumber  string
+	OrderID      uuid.UUID
+	OrderStatus  string
+	OrderType    string
+	OrderEvent   Event
+	OrderAccrual struct {
+		Amount Amount
+		Status OrderStatus
+	}
+	Order struct {
 		ID        OrderID
 		Number    OrderNumber
 		Type      OrderType
@@ -107,28 +113,19 @@ func NewOutcomeOrder(
 	}, nil
 }
 
-func (o *Order) Update(
-	status OrderStatus,
-	accrual Amount,
-) (err error) {
+func (o *Order) Update(accrual OrderAccrual) (err error) {
 	if o.Status.Final() {
 		return ErrOrderStatusFinal
 	}
 
-	if o.Status == status {
-		return nil
-	}
-
-	switch status {
-	case o.Status:
-		return nil
+	switch accrual.Status {
 	case OrderStatusProcessed:
-		o.Amount = accrual
-		o.Events = append(o.Events, OrderEventCompleted)
+		o.Amount = accrual.Amount
+		o.Events = append(o.Events, Event(OrderEventCompleted))
 	default:
-		o.Events = append(o.Events, OrderEventUpdated)
+		o.Events = append(o.Events, Event(OrderEventUpdated))
 	}
-	o.Status = status
+	o.Status = accrual.Status
 	o.UpdatedAt = utcNow()
 
 	return nil

@@ -15,11 +15,13 @@ import (
 )
 
 type Container struct {
-	Logger      *zap.Logger
-	DB          *sqlx.DB
-	Tokener     usecase.Tokener
-	AuthUseCase *usecase.AuthUseCase
-	Tx          *manager.Manager
+	Logger       *zap.Logger
+	DB           *sqlx.DB
+	AuthUseCase  *usecase.AuthUseCase
+	OrderUseCase *usecase.OrderUseCase
+	JobUseCase   *usecase.JobUseCase
+	Config       *config.Config
+	Tx           *manager.Manager
 }
 
 func NewContainer(cfg *config.Config) (*Container, error) {
@@ -47,9 +49,9 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	return &Container{
 		Logger:      logger,
 		DB:          db,
-		Tokener:     tokener,
 		AuthUseCase: authUseCase,
 		Tx:          trm,
+		Config:      cfg,
 	}, nil
 }
 

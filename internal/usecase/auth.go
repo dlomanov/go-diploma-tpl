@@ -127,3 +127,11 @@ func (uc *AuthUseCase) Login(
 
 	return t, nil
 }
+
+func (uc *AuthUseCase) GetUserID(token entity.Token) (entity.UserID, error) {
+	if token == "" {
+		return entity.UserID{}, ErrAuthTokenInvalid
+	}
+
+	return uc.tokener.GetUserID(token)
+}

@@ -25,7 +25,7 @@ func Auth(c *deps.Container) func(http.Handler) http.Handler {
 			}
 
 			token := h[len(authSchema):]
-			userID, err := c.Tokener.GetUserID(entity.Token(token))
+			userID, err := c.AuthUseCase.GetUserID(entity.Token(token))
 			if err != nil {
 				c.Logger.Debug("request with invalid token")
 				w.WriteHeader(http.StatusUnauthorized)
