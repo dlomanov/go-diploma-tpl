@@ -9,11 +9,10 @@ import (
 )
 
 var (
-	_ usecase.UserRepo       = (*MockUserRepo)(nil)
-	_ usecase.OrderRepo      = (*MockOrderRepo)(nil)
-	_ usecase.BalanceRepo    = (*MockBalanceRepo)(nil)
-	_ usecase.OrderPublisher = (*MockPublisher)(nil)
-	_ trm.Manager            = (*MockTrm)(nil)
+	_ usecase.UserRepo    = (*MockUserRepo)(nil)
+	_ usecase.OrderRepo   = (*MockOrderRepo)(nil)
+	_ usecase.BalanceRepo = (*MockBalanceRepo)(nil)
+	_ trm.Manager         = (*MockTrm)(nil)
 )
 
 type (
@@ -195,14 +194,6 @@ func (r *MockBalanceRepo) Get(
 	}
 
 	return balance, nil
-}
-
-func NewMockPublisher() MockPublisher {
-	return MockPublisher{}
-}
-
-func (m MockPublisher) Publish(_ context.Context, _ usecase.OrderEvent, _ entity.Order) error {
-	return nil
 }
 
 func NewMockTrm() *MockTrm {

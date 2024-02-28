@@ -42,12 +42,13 @@ func (p *Pipe) poll(
 			}
 
 			p.logger.Debug("jobs fetched", zap.Int("job_count", len(jobs)))
+		loop:
 			for _, job := range jobs {
 				select {
 				case output <- job:
 				case <-ctx.Done():
 					p.logger.Debug("cancelled")
-					break
+					break loop
 				}
 			}
 		}

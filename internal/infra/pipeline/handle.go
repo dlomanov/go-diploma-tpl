@@ -43,16 +43,17 @@ func (p *Pipe) worker(
 		open     bool
 	)
 
+loop:
 	for ctx.Err() == nil {
 		select {
 		case job, open = <-input:
 			if !open {
 				p.logger.Debug("input chan closed", workerID)
-				break
+				break loop
 			}
 		case <-ctx.Done():
 			p.logger.Debug("cancelled", workerID)
-			break
+			break loop
 		}
 
 		if err := p.retry(ctx, job); err != nil {
