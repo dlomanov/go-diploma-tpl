@@ -6,6 +6,7 @@ import (
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"sync"
 	"time"
 )
 
@@ -20,6 +21,8 @@ type (
 		shutdown        func()
 		shutdownTimeout time.Duration
 		fixProcDelay    time.Duration
+		handleMu        sync.RWMutex
+		pollTriggerCh   chan struct{}
 	}
 )
 
@@ -34,6 +37,8 @@ func New(c *deps.Container) *Pipe {
 		shutdownTimeout: c.Config.PipelineShutdownTimeout,
 		notify:          make(chan error, 1),
 		shutdown:        cancel,
+		handleMu:        sync.RWMutex{},
+		pollTriggerCh:   make(chan struct{}, 1),
 	}
 	g, gctx := errgroup.WithContext(ctx)
 
@@ -50,8 +55,18 @@ func (p *Pipe) Notify() <-chan error {
 	return p.notify
 }
 
+func (p *Pipe) Trigger() {
+	select {
+	case p.pollTriggerCh <- struct{}{}:
+		p.logger.Debug("poll triggered")
+	default:
+		p.logger.Debug("poll triggered already")
+	}
+}
+
 func (p *Pipe) Shutdown() error {
 	p.shutdown()
+
 	ctx, cancel := context.WithTimeout(context.Background(), p.shutdownTimeout)
 	defer cancel()
 

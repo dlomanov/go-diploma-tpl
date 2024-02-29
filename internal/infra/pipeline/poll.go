@@ -15,34 +15,20 @@ func (p *Pipe) poll(
 	g *errgroup.Group,
 ) <-chan entity.Job {
 	output := make(chan entity.Job, p.bufferSize)
-
 	g.Go(func() error {
 		defer close(output)
-		t := time.NewTimer(p.pollDelay)
-		defer t.Stop()
 
+	loop:
 		for ctx.Err() == nil {
 			jobs, err := p.jobUseCase.Fetch(ctx, p.bufferSize)
 			if err != nil {
-				switch {
-				case errors.Is(err, usecase.ErrJobNotFound):
-					p.logger.Debug("no jobs fetched")
-				default:
-					p.logger.Error("failed fetch jobs", zap.Error(err))
+				if err = p.delayOnError(ctx, err); err != nil {
+					return err
 				}
-
-				t.Reset(p.pollDelay)
-				select {
-				case <-t.C:
-					continue
-				case <-ctx.Done():
-					p.logger.Debug("cancelled")
-					break
-				}
+				continue loop
 			}
 
 			p.logger.Debug("jobs fetched", zap.Int("job_count", len(jobs)))
-		loop:
 			for _, job := range jobs {
 				select {
 				case output <- job:
@@ -58,4 +44,26 @@ func (p *Pipe) poll(
 	})
 
 	return output
+}
+
+func (p *Pipe) delayOnError(ctx context.Context, err error) error {
+	switch {
+	case errors.Is(err, usecase.ErrJobNotFound):
+		p.logger.Debug("no jobs fetched")
+	default:
+		p.logger.Error("failed fetch jobs", zap.Error(err))
+	}
+
+	t := time.NewTimer(p.pollDelay)
+	select {
+	case <-p.pollTriggerCh:
+		p.logger.Debug("poll triggered manually")
+		return nil
+	case <-t.C:
+		p.logger.Debug("poll triggered by timer")
+		return nil
+	case <-ctx.Done():
+		p.logger.Debug("cancelled")
+		return ctx.Err()
+	}
 }

@@ -71,28 +71,38 @@ func (p *Pipe) retry(
 ) error {
 	var (
 		rerr *entity.RetryError
-		t    *time.Timer
 	)
-	defer func(t *time.Timer) {
-		if t != nil {
-			t.Stop()
+
+	handle := func() error {
+		p.handleMu.RLock()
+		defer p.handleMu.RUnlock()
+		return p.jobUseCase.Handle(ctx, job)
+	}
+
+	wait := func() error {
+		if !p.handleMu.TryLock() {
+			p.logger.Debug("handleMu already acquired")
+			return nil
 		}
-	}(t)
+		defer p.handleMu.Unlock()
+
+		t := time.NewTimer(rerr.RetryAfter)
+		defer t.Stop()
+
+		select {
+		case <-t.C:
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
 
 	for {
-		err := p.jobUseCase.Handle(ctx, job)
+		err := handle()
 		switch {
 		case errors.As(err, &rerr):
-			if t != nil {
-				t.Reset(rerr.RetryAfter)
-			} else {
-				t = time.NewTimer(rerr.RetryAfter)
-			}
-			select {
-			case <-t.C:
-				continue
-			case <-ctx.Done():
-				return ctx.Err()
+			if err = wait(); err != nil {
+				return err
 			}
 		case err != nil:
 			if err = p.jobUseCase.Fail(ctx, job, err); err != nil {
