@@ -1,4 +1,4 @@
-package v1
+package endpoints
 
 import (
 	"encoding/json"
@@ -10,22 +10,15 @@ import (
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"net/http"
-	"strings"
 )
 
-const (
-	AuthorizationHeader = "Authorization"
-	ContentTypeHeader   = "Content-Type"
-	ContentTypeJSON     = "application/json"
-)
-
-type endpoints struct {
+type authEndpoints struct {
 	logger      *zap.Logger
 	authUseCase *usecase.AuthUseCase
 }
 
 func UseAuthEndpoints(router chi.Router, c *deps.Container) {
-	e := &endpoints{
+	e := &authEndpoints{
 		logger:      c.Logger,
 		authUseCase: c.AuthUseCase,
 	}
@@ -34,8 +27,8 @@ func UseAuthEndpoints(router chi.Router, c *deps.Container) {
 	router.Post("/api/user/login", e.Login)
 }
 
-func (e *endpoints) Register(w http.ResponseWriter, r *http.Request) {
-	if h, ok := get(ContentTypeJSON, r); !ok {
+func (e *authEndpoints) Register(w http.ResponseWriter, r *http.Request) {
+	if h, ok := getContentType(r, ContentTypeJSON); !ok {
 		e.logger.Debug("unsupported content type", zap.String("content_type", h))
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -43,7 +36,7 @@ func (e *endpoints) Register(w http.ResponseWriter, r *http.Request) {
 
 	model := new(request)
 	if err := json.NewDecoder(r.Body).Decode(model); err != nil {
-		e.logger.Error("failed to unmarshal json request", zap.Error(err))
+		e.logger.Error("failed to decode json request", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -68,8 +61,8 @@ func (e *endpoints) Register(w http.ResponseWriter, r *http.Request) {
 	e.writeToken(w, token)
 }
 
-func (e *endpoints) Login(w http.ResponseWriter, r *http.Request) {
-	if h, ok := get(ContentTypeJSON, r); !ok {
+func (e *authEndpoints) Login(w http.ResponseWriter, r *http.Request) {
+	if h, ok := getContentType(r, ContentTypeJSON); !ok {
 		e.logger.Debug("unsupported content type", zap.String("content_type", h))
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -144,14 +137,7 @@ func newResponse(errs []error) response {
 	}
 }
 
-func get(contentType string, r *http.Request) (string, bool) {
-	if h := r.Header.Get(ContentTypeHeader); strings.HasPrefix(h, contentType) {
-		return h, true
-	}
-	return "", false
-}
-
-func (e *endpoints) writeInvalid(w http.ResponseWriter, errs []error) {
+func (e *authEndpoints) writeInvalid(w http.ResponseWriter, errs []error) {
 	e.logger.Debug("validation failed", zap.Errors("validation_errors", errs))
 	w.Header().Set(ContentTypeHeader, ContentTypeJSON)
 	w.WriteHeader(http.StatusBadRequest)
@@ -162,7 +148,7 @@ func (e *endpoints) writeInvalid(w http.ResponseWriter, errs []error) {
 	}
 }
 
-func (e *endpoints) writeToken(w http.ResponseWriter, token entity.Token) {
+func (e *authEndpoints) writeToken(w http.ResponseWriter, token entity.Token) {
 	w.Header().Set(AuthorizationHeader, fmt.Sprintf("Bearer %s", token))
 	w.WriteHeader(http.StatusOK)
 }

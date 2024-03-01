@@ -82,22 +82,27 @@ func (r *OrderRepo) GetAll(
 	db := r.getDB(ctx)
 	oRows := make(orderRows, 0)
 
-	const argsCount = 2
-	args := make([]any, 0, argsCount)
-	switch {
-	case filter != nil:
-		if filter.Type != nil {
-			args = append(args, *filter.Type)
+	createArgs := func(filter *usecase.OrderFilter) []any {
+		args := []any{sql.NullString{}, uuid.NullUUID{}, sql.NullString{}}
+		if filter == nil {
+			return args
 		}
-		if filter.UserID != nil {
-			args = append(args, *filter.UserID)
+
+		for i := range args {
+			switch {
+			case i == 0 && filter.Type != nil:
+				args[i] = *filter.Type
+			case i == 1 && filter.UserID != nil:
+				args[i] = *filter.UserID
+			case i == 2 && filter.Number != nil:
+				args[i] = *filter.Number
+			}
 		}
-	default:
-		args = append(args,
-			sql.NullString{},
-			uuid.NullUUID{})
+
+		return args
 	}
 
+	args := createArgs(filter)
 	err := db.SelectContext(ctx, &oRows, `
 		SELECT
 			id,
@@ -112,17 +117,16 @@ func (r *OrderRepo) GetAll(
 		FROM orders
 		WHERE ($1 isnull OR $1 = type)
 		  AND ($2 isnull OR $2 = user_id)
+		  AND ($3 isnull OR $3 = number)
 		ORDER BY created_at;`, args)
-	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			return make([]entity.Order, 0), nil
-		default:
-			return nil, err
-		}
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		return make([]entity.Order, 0), nil
+	case err != nil:
+		return nil, err
+	default:
+		return oRows.toEntities()
 	}
-
-	return oRows.toEntities()
 }
 
 func (r *OrderRepo) Save(ctx context.Context, order entity.Order) error {

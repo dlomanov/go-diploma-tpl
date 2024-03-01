@@ -15,13 +15,14 @@ import (
 )
 
 type Container struct {
-	Logger       *zap.Logger
-	DB           *sqlx.DB
-	AuthUseCase  *usecase.AuthUseCase
-	OrderUseCase *usecase.OrderUseCase
-	JobUseCase   *usecase.JobUseCase
-	Config       *config.Config
-	Tx           *manager.Manager
+	Logger         *zap.Logger
+	DB             *sqlx.DB
+	AuthUseCase    *usecase.AuthUseCase
+	OrderUseCase   *usecase.OrderUseCase
+	BalanceUseCase *usecase.BalanceUseCase
+	JobUseCase     *usecase.JobUseCase
+	Config         *config.Config
+	Tx             *manager.Manager
 }
 
 func NewContainer(cfg *config.Config) (*Container, error) {

@@ -9,12 +9,12 @@ import (
 )
 
 var (
-	ErrOrderExists        = apperrors.NewInvalid("order exists")
-	ErrOrderNotFound      = apperrors.NewNotFound("order not found")
-	ErrOrderStatusInvalid = entity.ErrOrderStatusInvalid
-	ErrOrderTypeInvalid   = entity.ErrOrderTypeInvalid
-	ErrOrderNumberInvalid = apperrors.NewInvalid("invalid order number")
-	// ErrBalanceExists
+	ErrOrderExists             = apperrors.NewInvalid("order exists")
+	ErrOrderSavedByAnotherUser = apperrors.NewInvalid("order saved by another user")
+	ErrOrderNotFound           = apperrors.NewNotFound("order not found")
+	ErrOrderStatusInvalid      = entity.ErrOrderStatusInvalid
+	ErrOrderTypeInvalid        = entity.ErrOrderTypeInvalid
+	ErrOrderNumberInvalid      = apperrors.NewInvalid("invalid order number")
 )
 
 type (
@@ -33,6 +33,7 @@ type (
 		Update(ctx context.Context, order entity.Order) error
 	}
 	OrderFilter struct {
+		Number *entity.OrderNumber
 		Type   *entity.OrderType
 		UserID *entity.UserID
 	}
@@ -61,18 +62,28 @@ func NewOrderUseCase(
 	}
 }
 
-func (uc *OrderUseCase) Save(
+func (uc *OrderUseCase) Create(
 	ctx context.Context,
 	number entity.OrderNumber,
 	userID entity.UserID,
-) (entity.Order, error) {
+) error {
 	if !uc.validator.ValidateNumber(number) {
-		return entity.Order{}, ErrOrderNumberInvalid
+		return ErrOrderNumberInvalid
+	}
+	orders, err := uc.orderRepo.GetAll(ctx, &OrderFilter{Number: &number})
+	switch {
+	case err != nil:
+		return err
+	case len(orders) == 0:
+	case orders[0].UserID == userID:
+		return ErrOrderExists
+	default:
+		return ErrOrderSavedByAnotherUser
 	}
 
 	order, err := entity.NewIncomeOrder(number, userID)
 	if err != nil {
-		return entity.Order{}, err
+		return err
 	}
 
 	err = uc.tx.Do(ctx, func(ctx context.Context) error {
@@ -82,10 +93,10 @@ func (uc *OrderUseCase) Save(
 		return uc.backgroundJob.Enqueue(uuid.UUID(order.ID), entity.JobTypePollAccrual)
 	})
 	if err != nil {
-		return entity.Order{}, err
+		return err
 	}
 
-	return *order, nil
+	return nil
 }
 
 func (uc *OrderUseCase) UpdateAccrual(

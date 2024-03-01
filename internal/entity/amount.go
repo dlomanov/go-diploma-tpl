@@ -33,6 +33,10 @@ func (a Amount) Equal(b Amount) bool {
 	return ad.Equal(bd)
 }
 
+func (a Amount) String() string {
+	return decimal.Decimal(a).Round(places).String()
+}
+
 func ZeroAmount() Amount {
 	return Amount(decimal.Zero)
 }
