@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
+	"github.com/dlomanov/go-diploma-tpl/internal/entity/apperrors"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"time"
@@ -70,7 +71,7 @@ func (p *Pipe) retry(
 	job entity.Job,
 ) error {
 	var (
-		rerr *entity.RetryError
+		rerr *apperrors.AppErrorTransient
 	)
 
 	handle := func() error {

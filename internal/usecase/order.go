@@ -2,18 +2,18 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"github.com/avito-tech/go-transaction-manager/trm/v2"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
+	"github.com/dlomanov/go-diploma-tpl/internal/entity/apperrors"
 	"github.com/google/uuid"
 )
 
 var (
-	ErrOrderExists        = errors.New("order exists")
-	ErrOrderNotFound      = errors.New("order not found")
+	ErrOrderExists        = apperrors.NewInvalid("order exists")
+	ErrOrderNotFound      = apperrors.NewNotFound("order not found")
 	ErrOrderStatusInvalid = entity.ErrOrderStatusInvalid
 	ErrOrderTypeInvalid   = entity.ErrOrderTypeInvalid
-	ErrOrderNumberInvalid = errors.New("invalid order number")
+	ErrOrderNumberInvalid = apperrors.NewInvalid("invalid order number")
 	// ErrBalanceExists
 )
 

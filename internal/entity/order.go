@@ -1,8 +1,8 @@
 package entity
 
 import (
-	"errors"
 	"fmt"
+	"github.com/dlomanov/go-diploma-tpl/internal/entity/apperrors"
 	"github.com/google/uuid"
 	"time"
 )
@@ -32,10 +32,10 @@ const (
 )
 
 var (
-	ErrOrderNegativeAmount = errors.New("order amount should be positive")
-	ErrOrderTypeInvalid    = errors.New("invalid order type")
-	ErrOrderStatusInvalid  = errors.New("invalid order status")
-	ErrOrderEventInvalid   = errors.New("invalid order event")
+	ErrOrderNegativeAmount = apperrors.NewInvalid("order amount should be positive")
+	ErrOrderTypeInvalid    = apperrors.NewInvalid("invalid order type")
+	ErrOrderStatusInvalid  = apperrors.NewInvalid("invalid order status")
+	ErrOrderEventInvalid   = apperrors.NewInvalid("invalid order event")
 	ErrOrderStatusFinal    = fmt.Errorf("%w: attempted update on order in final status", ErrOrderStatusInvalid)
 )
 
