@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
+
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/shopspring/decimal"
-	"time"
 )
 
 var _ usecase.OrderRepo = (*OrderRepo)(nil)
@@ -31,11 +32,6 @@ type (
 		UserID    uuid.UUID       `db:"user_id"`
 		CreatedAt time.Time       `db:"created_at"`
 		UpdatedAt time.Time       `db:"updated_at"`
-	}
-	filterRow struct {
-		Number *string
-		Type   *string
-		UserID *uuid.UUID
 	}
 )
 
@@ -69,8 +65,8 @@ func (r *OrderRepo) Get(
 			created_at,
 			updated_at
 		FROM orders
-		WHERE id = $1;`,
-		id)
+		WHERE id = $1::uuid;`,
+		id.String())
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

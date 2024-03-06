@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
+
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/shopspring/decimal"
-	"time"
 )
 
 var _ usecase.BalanceRepo = (*BalanceRepo)(nil)
@@ -39,10 +40,14 @@ func NewBalanceRepo(
 	}
 }
 
-func (r *BalanceRepo) Get(ctx context.Context, userID entity.UserID) (entity.Balance, error) {
+func (r *BalanceRepo) Get(
+	ctx context.Context,
+	userID entity.UserID,
+) (entity.Balance, error) {
 	db := r.getDB(ctx)
 	bRow := balanceRow{}
 
+	idStr := userID
 	err := db.GetContext(ctx, &bRow, `
 		SELECT
 			user_id,
@@ -51,8 +56,8 @@ func (r *BalanceRepo) Get(ctx context.Context, userID entity.UserID) (entity.Bal
 			created_at,
 			updated_at
 		FROM balances
-		WHERE user_id = $1;`,
-		userID)
+		WHERE user_id = $1::uuid;`,
+		idStr)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

@@ -1,15 +1,15 @@
 package endpoints
 
 import (
-	"github.com/dlomanov/go-diploma-tpl/internal/deps"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/deps"
 	"github.com/go-chi/chi/v5"
-	"github.com/swaggo/http-swagger/v2"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 
 	"strings"
 )
 
 func UseSwagger(router chi.Router, c *deps.Container) {
-	url := c.Config.RunAddress
+	url := c.Config.ServerAddr
 	if !strings.HasPrefix(url, "http") {
 		url = "http://" + url
 	}

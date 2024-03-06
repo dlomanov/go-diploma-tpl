@@ -1,11 +1,12 @@
 package middlewares
 
 import (
-	"github.com/dlomanov/go-diploma-tpl/internal/deps"
-	"github.com/dlomanov/go-diploma-tpl/internal/entity"
-	"github.com/google/uuid"
 	"net/http"
 	"strings"
+
+	"github.com/dlomanov/go-diploma-tpl/internal/entity"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/deps"
+	"github.com/google/uuid"
 )
 
 const (

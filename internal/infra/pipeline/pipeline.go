@@ -3,71 +3,93 @@ package pipeline
 import (
 	"context"
 	"errors"
-	"github.com/dlomanov/go-diploma-tpl/internal/deps"
-	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
+	"time"
+
+	"github.com/dlomanov/go-diploma-tpl/config"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/pipeline/stages"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	"sync"
-	"time"
 )
 
 type (
-	Pipe struct {
-		logger          *zap.Logger
-		bufferSize      uint
-		pollDelay       time.Duration
-		handlerCount    uint
-		notify          chan error
-		shutdown        func()
-		shutdownTimeout time.Duration
-		fixDelay        time.Duration
-		fixProcTimeout  time.Duration
-		handleMu        sync.RWMutex
-		pollTriggerCh   chan struct{}
-		jobUseCase      *usecase.JobUseCase
+	Pipeline struct {
+		logger            *zap.Logger
+		bufferSize        uint
+		pollDelay         time.Duration
+		handleWorkerCount uint
+		notify            chan error
+		shutdown          func()
+		shutdownTimeout   time.Duration
+		fixDelay          time.Duration
+		fixProcTimeout    time.Duration
+		stages            Stages
+	}
+	Stages struct {
+		poll   *stages.PollStage
+		handle *stages.HandleStage
+		fix    *stages.FixStage
+	}
+	Handler interface {
+		stages.Fetcher
+		stages.Handler
+		stages.Fixer
 	}
 )
 
-func New(c *deps.Container) *Pipe {
-	ctx, cancel := context.WithCancel(context.Background())
-	p := &Pipe{
-		jobUseCase:      c.JobUseCase,
-		logger:          c.Logger,
-		bufferSize:      c.Config.PipelineBufferSize,
-		pollDelay:       c.Config.PipelinePollDelay,
-		fixDelay:        c.Config.PipelineFixDelay,
-		fixProcTimeout:  c.Config.PipelineFixProcTimeout,
-		shutdownTimeout: c.Config.PipelineShutdownTimeout,
-		notify:          make(chan error, 1),
-		shutdown:        cancel,
-		handleMu:        sync.RWMutex{},
-		pollTriggerCh:   make(chan struct{}, 1),
+func New(
+	logger *zap.Logger,
+	cfg *config.Config,
+) *Pipeline {
+	return &Pipeline{
+		logger:            logger,
+		bufferSize:        cfg.PipelineBufferSize,
+		pollDelay:         cfg.PipelinePollDelay,
+		fixDelay:          cfg.PipelineFixDelay,
+		fixProcTimeout:    cfg.PipelineFixProcTimeout,
+		handleWorkerCount: cfg.PipelineHandleWorkerCount,
+		shutdownTimeout:   cfg.PipelineShutdownTimeout,
+		notify:            make(chan error, 1),
+		shutdown:          func() { /* noop */ },
+		stages: Stages{
+			poll: stages.NewPollStage(
+				logger,
+				cfg.PipelineBufferSize,
+				cfg.PipelinePollDelay),
+			handle: stages.NewHandleStage(
+				logger,
+				cfg.PipelineHandleWorkerCount),
+			fix: stages.NewFixStage(
+				logger,
+				cfg.PipelineFixDelay,
+				cfg.PipelineFixProcTimeout),
+		},
 	}
-	g, gctx := errgroup.WithContext(ctx)
-
-	p.fix(gctx, g)
-
-	jobs := p.poll(gctx, g)
-	p.handle(gctx, g, jobs)
-	p.wait(g)
-
-	return p
 }
 
-func (p *Pipe) Notify() <-chan error {
+func (p *Pipeline) GetPollTrigger() func() {
+	return p.stages.poll.Trigger
+}
+
+func (p *Pipeline) Start(handler Handler) {
+	ctx, cancel := context.WithCancel(context.Background())
+	p.shutdown = cancel
+	g, gctx := errgroup.WithContext(ctx)
+
+	// independent stages
+	p.stages.fix.Run(gctx, g, handler)
+
+	// pipeline stages
+	data := p.stages.poll.Run(gctx, g, handler)
+	p.stages.handle.Run(gctx, g, handler, data)
+
+	p.wait(g)
+}
+
+func (p *Pipeline) Notify() <-chan error {
 	return p.notify
 }
 
-func (p *Pipe) Trigger() {
-	select {
-	case p.pollTriggerCh <- struct{}{}:
-		p.logger.Debug("poll triggered")
-	default:
-		p.logger.Debug("poll triggered already")
-	}
-}
-
-func (p *Pipe) Shutdown() error {
+func (p *Pipeline) Shutdown() error {
 	p.shutdown()
 
 	ctx, cancel := context.WithTimeout(context.Background(), p.shutdownTimeout)
@@ -87,4 +109,13 @@ func (p *Pipe) Shutdown() error {
 		}
 		return err
 	}
+}
+
+func (p *Pipeline) wait(g *errgroup.Group) {
+	go func() {
+		defer close(p.notify)
+		defer p.shutdown()
+		err := g.Wait()
+		p.notify <- err
+	}()
 }

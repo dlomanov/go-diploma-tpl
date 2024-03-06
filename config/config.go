@@ -3,22 +3,23 @@ package config
 import (
 	"embed"
 	"flag"
-	"github.com/ilyakaznacheev/cleanenv"
-	"gopkg.in/yaml.v3"
 	"io/fs"
 	"log"
 	"os"
 	"time"
+
+	"github.com/ilyakaznacheev/cleanenv"
+	"gopkg.in/yaml.v3"
 )
 
 type (
 	Config struct {
-		App         `yaml:"app"`
-		Logger      `yaml:"logger"`
-		PG          `yaml:"postgres"`
-		HTTP        `yaml:"http"`
-		AccrualHTTP `yaml:"accrual_http"`
-		Pipeline    `yaml:"pipeline"`
+		App        `yaml:"app"`
+		Logger     `yaml:"logger"`
+		PG         `yaml:"postgres"`
+		Server     `yaml:"server"`
+		AccrualAPI `yaml:"accrual_api"`
+		Pipeline   `yaml:"pipeline"`
 	}
 
 	App struct {
@@ -37,20 +38,22 @@ type (
 		DatabaseURI string `yaml:"url" env:"DATABASE_URI"`
 	}
 
-	HTTP struct {
-		RunAddress string `yaml:"address" env:"RUN_ADDRESS"`
+	Server struct {
+		ServerAddr            string        `yaml:"address" env:"RUN_ADDRESS"`
+		ServerShutdownTimeout time.Duration `yaml:"shutdown_timeout" env:"SERVER_SHUTDOWN_TIMEOUT"`
 	}
 
-	AccrualHTTP struct {
-		AccrualAddress string `yaml:"address" env:"ACCRUAL_SYSTEM_ADDRESS"`
+	AccrualAPI struct {
+		AccrualAPIAddr string `yaml:"address" env:"ACCRUAL_SYSTEM_ADDRESS"`
 	}
 
 	Pipeline struct {
-		PipelineBufferSize      uint          `yaml:"buffer_size" env:"PIPELINE_BUFFER_SIZE"`
-		PipelineShutdownTimeout time.Duration `yaml:"shutdown_timeout" env:"PIPELINE_SHUTDOWN_TIMEOUT"`
-		PipelinePollDelay       time.Duration `yaml:"poll_delay" env:"PIPELINE_POLL_DELAY"`
-		PipelineFixDelay        time.Duration `yaml:"fix_delay" env:"PIPELINE_FIX_DELAY"`
-		PipelineFixProcTimeout  time.Duration `yaml:"fix_proc_timeout" env:"PIPELINE_FIX_PROC_TIMEOUT"`
+		PipelineBufferSize        uint          `yaml:"buffer_size" env:"PIPELINE_BUFFER_SIZE"`
+		PipelineHandleWorkerCount uint          `yaml:"handler_count" env:"PIPELINE_HANDLER_COUNT"`
+		PipelineShutdownTimeout   time.Duration `yaml:"shutdown_timeout" env:"PIPELINE_SHUTDOWN_TIMEOUT"`
+		PipelinePollDelay         time.Duration `yaml:"poll_delay" env:"PIPELINE_POLL_DELAY"`
+		PipelineFixDelay          time.Duration `yaml:"fix_delay" env:"PIPELINE_FIX_DELAY"`
+		PipelineFixProcTimeout    time.Duration `yaml:"fix_proc_timeout" env:"PIPELINE_FIX_PROC_TIMEOUT"`
 	}
 )
 
@@ -79,8 +82,8 @@ func NewConfig() *Config {
 	}
 
 	f := flag.NewFlagSet("", flag.ContinueOnError)
-	f.StringVar(&cfg.HTTP.RunAddress, "a", cfg.HTTP.RunAddress, "service run address and port")
-	f.StringVar(&cfg.AccrualHTTP.AccrualAddress, "r", cfg.AccrualHTTP.AccrualAddress, "accrual system address")
+	f.StringVar(&cfg.Server.ServerAddr, "a", cfg.Server.ServerAddr, "service run address and port")
+	f.StringVar(&cfg.AccrualAPI.AccrualAPIAddr, "r", cfg.AccrualAPI.AccrualAPIAddr, "accrual system address")
 	f.StringVar(&cfg.PG.DatabaseURI, "d", cfg.PG.DatabaseURI, "postgres database uri")
 	err := f.Parse(os.Args[1:])
 	if err != nil {

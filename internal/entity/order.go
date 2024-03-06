@@ -2,9 +2,10 @@ package entity
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/dlomanov/go-diploma-tpl/internal/entity/apperrors"
 	"github.com/google/uuid"
-	"time"
 )
 
 const (
@@ -149,4 +150,8 @@ func (s OrderStatus) Valid() bool {
 		s == OrderStatusProcessing ||
 		s == OrderStatusInvalid ||
 		s == OrderStatusProcessed
+}
+
+func (id OrderID) String() string {
+	return uuid.UUID(id).String()
 }

@@ -2,8 +2,8 @@ package app
 
 import (
 	"github.com/dlomanov/go-diploma-tpl/config"
-	"github.com/dlomanov/go-diploma-tpl/internal/deps"
-	"github.com/dlomanov/go-diploma-tpl/internal/entrypoints/http/v1"
+	v1 "github.com/dlomanov/go-diploma-tpl/internal/entrypoints/http/v1"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/deps"
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/httpserver"
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/pipeline"
 	"github.com/go-chi/chi/v5"
@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 func Run(cfg *config.Config) error {
@@ -23,11 +22,11 @@ func Run(cfg *config.Config) error {
 
 	c.Logger.Info("run app")
 
-	server := startServer(c)
-	pipe := startPipeline(c)
-	wait(c, server, pipe)
-	shutdownServer(c, server)
-	shutdownPipeline(c, pipe)
+	s := startServer(c)
+	p := startPipeline(c)
+	wait(c, s, p)
+	shutdownServer(c, s)
+	shutdownPipeline(c, p)
 
 	c.Logger.Debug("app terminated")
 	return nil
@@ -38,8 +37,8 @@ func startServer(c *deps.Container) *httpserver.Server {
 	v1.NewRouter(r, c)
 	s := httpserver.New(
 		r,
-		httpserver.Addr(c.Config.HTTP.RunAddress),
-		httpserver.ShutdownTimeout(15*time.Second))
+		httpserver.Addr(c.Config.ServerAddr),
+		httpserver.ShutdownTimeout(c.Config.ServerShutdownTimeout))
 	c.Logger.Debug("server started")
 
 	return s
@@ -54,13 +53,13 @@ func shutdownServer(c *deps.Container, s *httpserver.Server) {
 	c.Logger.Debug("server shutdown - ok")
 }
 
-func startPipeline(c *deps.Container) *pipeline.Pipe {
-	p := pipeline.New(c)
+func startPipeline(c *deps.Container) *pipeline.Pipeline {
+	p := c.StartPipeline()
 	c.Logger.Debug("pipeline started")
 	return p
 }
 
-func shutdownPipeline(c *deps.Container, p *pipeline.Pipe) {
+func shutdownPipeline(c *deps.Container, p *pipeline.Pipeline) {
 	c.Logger.Debug("pipeline shutdown")
 	if err := p.Shutdown(); err != nil {
 		c.Logger.Error("pipeline shutdown - error", zap.Error(err))
@@ -72,7 +71,7 @@ func shutdownPipeline(c *deps.Container, p *pipeline.Pipe) {
 func wait(
 	c *deps.Container,
 	server *httpserver.Server,
-	pipe *pipeline.Pipe,
+	pipe *pipeline.Pipeline,
 ) {
 	terminate := make(chan os.Signal, 1)
 	signal.Notify(terminate, syscall.SIGINT, syscall.SIGTERM)

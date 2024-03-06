@@ -1,8 +1,9 @@
 package entity
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type (
@@ -52,4 +53,8 @@ func (c Creds) Valid() bool {
 
 func (t Token) Valid() bool {
 	return t != ""
+}
+
+func (id UserID) String() string {
+	return uuid.UUID(id).String()
 }

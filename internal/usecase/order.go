@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+
 	"github.com/avito-tech/go-transaction-manager/trm/v2"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity/apperrors"
@@ -52,6 +53,7 @@ func NewOrderUseCase(
 	orderRepo OrderRepo,
 	balanceRepo BalanceRepo,
 	validator OrderValidator,
+	accrualAPI OrderAccrualAPI,
 	backgroundQueue BackgroundQueue,
 	tx trm.Manager,
 ) *OrderUseCase {
@@ -59,6 +61,7 @@ func NewOrderUseCase(
 		orderRepo:     orderRepo,
 		balanceRepo:   balanceRepo,
 		validator:     validator,
+		accrualAPI:    accrualAPI,
 		backgroundJob: backgroundQueue,
 		tx:            tx,
 	}

@@ -15,17 +15,21 @@ var (
 
 type (
 	JobQueue struct {
-		jobRepo *repo.JobRepo
+		jobRepo     *repo.JobRepo
+		pollTrigger func()
 	}
 )
 
-func NewJobQueue(jobRepo *repo.JobRepo) *JobQueue {
+func NewJobQueue(
+	jobRepo *repo.JobRepo,
+	trigger func()) *JobQueue {
 	return &JobQueue{
-		jobRepo: jobRepo,
+		jobRepo:     jobRepo,
+		pollTrigger: trigger,
 	}
 }
 
-func (b *JobQueue) Enqueue(
+func (q *JobQueue) Enqueue(
 	ctx context.Context,
 	entityID uuid.UUID,
 	jobType entity.JobType,
@@ -35,5 +39,12 @@ func (b *JobQueue) Enqueue(
 		return err
 	}
 
-	return b.jobRepo.Create(ctx, job)
+	err = q.jobRepo.Create(ctx, job)
+	if err != nil {
+		return err
+	}
+
+	q.pollTrigger()
+
+	return nil
 }

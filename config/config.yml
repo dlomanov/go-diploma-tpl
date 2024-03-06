@@ -10,15 +10,17 @@ logger:
 postgres:
   url: 'host=localhost port=5432 user=postgres password=1 dbname=go_diploma sslmode=disable'
 
-http:
-  address: 'localhost:8080'
+server:
+  address: 'localhost:6001'
 
-accrual_http:
-  address: 'localhost:8081'
+accrual_api:
+  address: 'localhost:6002'
+  shutdown_timeout: "15s"
 
 pipeline:
   buffer_size: 10
-  shutdown_timeout: "3s"
-  poll_delay: "5s"
+  handler_count: 2
+  shutdown_timeout: "15s"
+  poll_delay: "5m"
   fix_delay: "5m"
   fix_proc_timeout: "5m"

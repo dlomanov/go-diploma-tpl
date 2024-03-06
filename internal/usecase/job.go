@@ -3,15 +3,17 @@ package usecase
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/avito-tech/go-transaction-manager/trm/v2"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
-	"time"
+	"github.com/dlomanov/go-diploma-tpl/internal/entity/apperrors"
 )
 
 var (
-	ErrJobExists      = errors.New("job already exists")
-	ErrJobNotFound    = errors.New("job not found")
-	ErrJobTypeInvalid = errors.New("invalid job type")
+	ErrJobExists      = apperrors.NewInvalid("job already exists")
+	ErrJobNotFound    = apperrors.NewNotFound("job not found")
+	ErrJobTypeInvalid = apperrors.NewInvalid("invalid job type")
 
 	delays = []time.Duration{
 		0 * time.Second,
@@ -37,7 +39,7 @@ type (
 		Create(ctx context.Context, job entity.Job) error
 		GetUpdate(ctx context.Context, count uint) ([]entity.Job, error)
 		Update(ctx context.Context, job entity.Job) error
-		FixProcessing(ctx context.Context, timeout time.Duration) error
+		FixProcessingTimeout(ctx context.Context, timeout time.Duration) error
 	}
 )
 
@@ -66,8 +68,8 @@ func (uc *JobUseCase) Handle(ctx context.Context, job entity.Job) error {
 	}
 }
 
-func (uc *JobUseCase) FixProcessing(ctx context.Context, procTimeout time.Duration) error {
-	return uc.repo.FixProcessing(ctx, procTimeout)
+func (uc *JobUseCase) FixProcessingTimeout(ctx context.Context, procTimeout time.Duration) error {
+	return uc.repo.FixProcessingTimeout(ctx, procTimeout)
 }
 
 func (uc *JobUseCase) Fail(
@@ -85,7 +87,7 @@ func (uc *JobUseCase) pollAccrual(ctx context.Context, job entity.Job) error {
 		case errors.Is(err, entity.ErrOrderStatusFinal):
 			return uc.fail(ctx, job, entity.ErrOrderStatusFinal)
 		case errors.Is(err, ErrOrderNotFound):
-			return uc.Fail(ctx, job, ErrOrderNotFound)
+			return uc.fail(ctx, job, ErrOrderNotFound)
 		case errors.Is(err, entity.ErrOrderEventInvalid):
 			return uc.fail(ctx, job, entity.ErrOrderEventInvalid)
 		case err != nil:

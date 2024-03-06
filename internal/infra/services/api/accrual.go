@@ -1,18 +1,19 @@
-package webapi
+package api
 
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity/apperrors"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	"github.com/go-resty/resty/v2"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (

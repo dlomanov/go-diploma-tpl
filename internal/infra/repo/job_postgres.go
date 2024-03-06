@@ -4,12 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
+
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"time"
 )
 
 var (
@@ -23,11 +24,11 @@ type (
 	}
 	jobRows []jobRow
 	jobRow  struct {
-		ID            uuid.UUID      `db:"id,omitempty"`
-		Type          string         `db:"type,omitempty"`
-		Status        string         `db:"status,omitempty"`
-		EntityID      uuid.UUID      `db:"entity_id,omitempty"`
-		Attempt       uint           `db:"attempt,omitempty"`
+		ID            uuid.UUID      `db:"id"`
+		Type          string         `db:"type"`
+		Status        string         `db:"status"`
+		EntityID      uuid.UUID      `db:"entity_id"`
+		Attempt       uint           `db:"attempt"`
 		LastError     sql.NullString `db:"last_error"`
 		NextAttemptAt sql.NullTime   `db:"next_attempt_at"`
 		CreatedAt     time.Time      `db:"created_at"`
@@ -120,15 +121,15 @@ func (r *JobRepo) Update(ctx context.Context, job entity.Job) error {
 	result, err := db.NamedExecContext(ctx, `
 		UPDATE jobs
 		SET attempt = attempt + 1,
-		    next_attempt = :next_attempt,
-			status = :status,
+		    next_attempt_at = cast(:next_attempt_at as timestamp),
+			status = cast(:status as text),
 			last_error =
 			    CASE
-			        WHEN :last_error isnull THEN last_error
-			        ELSE :last_error
+			        WHEN cast(:last_error as text) isnull THEN last_error
+			        ELSE cast(:last_error as text)
 			    END, 
 		    updated_at = timezone('utc', now())
-		WHERE id = :id;`,
+		WHERE id = cast(:id as uuid);`,
 		toJobRow(job))
 
 	if err != nil {
@@ -145,7 +146,7 @@ func (r *JobRepo) Update(ctx context.Context, job entity.Job) error {
 	return nil
 }
 
-func (r *JobRepo) FixProcessing(
+func (r *JobRepo) FixProcessingTimeout(
 	ctx context.Context,
 	timeout time.Duration,
 ) error {
@@ -153,7 +154,8 @@ func (r *JobRepo) FixProcessing(
 
 	_, err := db.ExecContext(ctx, `
 		UPDATE jobs
-		SET next_attempt_at = timezone('utc', now())
+		SET next_attempt_at = timezone('utc', now()),
+			attempt = attempt + 1
 		WHERE status = $1
 		  AND next_attempt_at is null
 		  AND timezone('utc', now()) - updated_at > $2;`,

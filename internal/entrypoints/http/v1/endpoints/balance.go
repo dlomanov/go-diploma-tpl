@@ -3,14 +3,15 @@ package endpoints
 import (
 	"encoding/json"
 	"errors"
-	"github.com/dlomanov/go-diploma-tpl/internal/deps"
+	"net/http"
+	"time"
+
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/deps"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	"github.com/go-chi/chi/v5"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
-	"net/http"
-	"time"
 )
 
 type (
@@ -94,7 +95,7 @@ func (e *balanceEndpoints) withdraw(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if v, ok := getContentType(r, ContentTypeText); !ok {
+	if v, ok := getContentType(r, ContentTypeJSON); !ok {
 		e.logger.Debug(UnsupportedContentType, zap.String("content_type", v))
 		w.WriteHeader(http.StatusUnsupportedMediaType)
 		return
@@ -115,6 +116,8 @@ func (e *balanceEndpoints) withdraw(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case errors.Is(err, usecase.ErrOrderNumberInvalid):
 		w.WriteHeader(http.StatusUnprocessableEntity)
+	case errors.Is(err, usecase.ErrOrderExists):
+		w.WriteHeader(http.StatusConflict)
 	case errors.Is(err, entity.ErrBalanceNotEnoughFounds):
 		w.WriteHeader(http.StatusPaymentRequired)
 	case err != nil:

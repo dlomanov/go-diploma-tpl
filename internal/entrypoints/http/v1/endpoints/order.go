@@ -3,14 +3,15 @@ package endpoints
 import (
 	"encoding/json"
 	"errors"
-	"github.com/dlomanov/go-diploma-tpl/internal/deps"
-	"github.com/dlomanov/go-diploma-tpl/internal/entity"
-	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
-	"github.com/go-chi/chi/v5"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/dlomanov/go-diploma-tpl/internal/entity"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/deps"
+	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
+	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 type (

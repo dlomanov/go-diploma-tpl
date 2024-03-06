@@ -5,7 +5,9 @@ import (
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/dlomanov/go-diploma-tpl/config"
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/logging"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/pipeline"
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/repo"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/services/api"
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/services/job"
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/services/pass"
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/services/token"
@@ -18,12 +20,13 @@ import (
 
 type Container struct {
 	Logger         *zap.Logger
+	Config         *config.Config
 	DB             *sqlx.DB
+	PipeLine       *pipeline.Pipeline
 	AuthUseCase    *usecase.AuthUseCase
 	OrderUseCase   *usecase.OrderUseCase
 	BalanceUseCase *usecase.BalanceUseCase
 	JobUseCase     *usecase.JobUseCase
-	Config         *config.Config
 	Tx             *manager.Manager
 }
 
@@ -43,32 +46,44 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		return nil, err
 	}
 
+	pl := pipeline.New(logger, cfg)
+
+	// repos
 	getter := trmsqlx.DefaultCtxGetter
 	userRepo := repo.NewUserRepo(db, getter)
 	balanceRepo := repo.NewBalanceRepo(db, getter)
 	orderRepo := repo.NewOrderRepo(db, getter)
 	jobRepo := repo.NewJobRepo(db, getter)
 
+	// services
 	hasher := pass.NewHasher(cfg.App.PassHashCost)
 	tokener := token.NewJWT([]byte(cfg.App.TokenSecretKey), cfg.App.TokenExpires)
 	orderValidator := validator.NewOrderValidator()
-	backgroundQueue := job.NewJobQueue(jobRepo)
+	backgroundQueue := job.NewJobQueue(jobRepo, pl.GetPollTrigger())
+	accrualAPI := api.NewAccrualAPI(logger, cfg.AccrualAPIAddr)
 
+	// usecases
 	authUseCase := usecase.NewAuthUseCase(logger, userRepo, balanceRepo, hasher, tokener, trm)
-	orderUseCase := usecase.NewOrderUseCase(orderRepo, balanceRepo, orderValidator, backgroundQueue, trm)
+	orderUseCase := usecase.NewOrderUseCase(orderRepo, balanceRepo, orderValidator, accrualAPI, backgroundQueue, trm)
 	balanceUseCase := usecase.NewBalanceUseCase(orderRepo, balanceRepo, orderValidator, trm)
 	jobUseCase := usecase.NewJobUseCase(jobRepo, orderUseCase, trm)
 
 	return &Container{
 		Logger:         logger,
+		Config:         cfg,
 		DB:             db,
+		PipeLine:       pl,
 		AuthUseCase:    authUseCase,
 		OrderUseCase:   orderUseCase,
 		BalanceUseCase: balanceUseCase,
 		JobUseCase:     jobUseCase,
 		Tx:             trm,
-		Config:         cfg,
 	}, nil
+}
+
+func (c *Container) StartPipeline() *pipeline.Pipeline {
+	c.PipeLine.Start(c.JobUseCase)
+	return c.PipeLine
 }
 
 func (c *Container) Close() {
