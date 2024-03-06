@@ -11,5 +11,6 @@ func RunMigration(cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
+	plain.Info("run migrations")
 	return migrator.Migrate(cfg.PG.DatabaseURI, plain.Sugar())
 }

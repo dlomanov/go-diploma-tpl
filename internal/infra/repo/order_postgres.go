@@ -32,12 +32,20 @@ type (
 		CreatedAt time.Time       `db:"created_at"`
 		UpdatedAt time.Time       `db:"updated_at"`
 	}
+	filterRow struct {
+		Number *string
+		Type   *string
+		UserID *uuid.UUID
+	}
 )
 
-func NewOrderRepo(db *sqlx.DB, c *trmsqlx.CtxGetter) *OrderRepo {
+func NewOrderRepo(
+	db *sqlx.DB,
+	getter *trmsqlx.CtxGetter,
+) *OrderRepo {
 	return &OrderRepo{
 		db:     db,
-		getter: c,
+		getter: getter,
 	}
 }
 
@@ -115,10 +123,11 @@ func (r *OrderRepo) GetAll(
 			created_at,
 			updated_at
 		FROM orders
-		WHERE ($1 isnull OR $1 = type)
-		  AND ($2 isnull OR $2 = user_id)
-		  AND ($3 isnull OR $3 = number)
-		ORDER BY created_at;`, args)
+		WHERE ($1::text isnull OR $1::text = type)
+		  AND ($2::uuid isnull OR $2::uuid = user_id)
+		  AND ($3::text isnull OR $3::text = number)
+		ORDER BY created_at;`,
+		args...)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return make([]entity.Order, 0), nil
@@ -129,7 +138,7 @@ func (r *OrderRepo) GetAll(
 	}
 }
 
-func (r *OrderRepo) Save(ctx context.Context, order entity.Order) error {
+func (r *OrderRepo) Create(ctx context.Context, order entity.Order) error {
 	db := r.getDB(ctx)
 	row, err := toOrderRow(order)
 	if err != nil {

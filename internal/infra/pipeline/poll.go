@@ -3,11 +3,12 @@ package pipeline
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	"time"
 )
 
 func (p *Pipe) poll(
@@ -33,7 +34,7 @@ func (p *Pipe) poll(
 				select {
 				case output <- job:
 				case <-ctx.Done():
-					p.logger.Debug("cancelled")
+					p.logger.Debug("catch cancellation")
 					break loop
 				}
 			}
@@ -54,6 +55,7 @@ func (p *Pipe) delayOnError(ctx context.Context, err error) error {
 		p.logger.Error("failed fetch jobs", zap.Error(err))
 	}
 
+	// TODO: reuse timer instead of creating new one
 	t := time.NewTimer(p.pollDelay)
 	select {
 	case <-p.pollTriggerCh:
@@ -63,7 +65,7 @@ func (p *Pipe) delayOnError(ctx context.Context, err error) error {
 		p.logger.Debug("poll triggered by timer")
 		return nil
 	case <-ctx.Done():
-		p.logger.Debug("cancelled")
+		p.logger.Debug("catch cancellation")
 		return ctx.Err()
 	}
 }

@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
-	"github.com/dlomanov/go-diploma-tpl/internal/infra/algo/pass"
-	"github.com/dlomanov/go-diploma-tpl/internal/infra/algo/token"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/services/pass"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/services/token"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"testing"
 	"time"
 )
@@ -147,6 +148,7 @@ func TestAuthUseCase(t *testing.T) {
 	tokener := token.NewJWT([]byte("test"), time.Minute)
 	balanceRepo := mocks.NewMockBalanceRepo()
 	uc := usecase.NewAuthUseCase(
+		zap.NewNop(),
 		mocks.NewMockUserRepo(),
 		balanceRepo,
 		pass.NewHasher(0),

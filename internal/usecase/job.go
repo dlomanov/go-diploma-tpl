@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/avito-tech/go-transaction-manager/trm/v2"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
-	"github.com/google/uuid"
 	"time"
 )
 
@@ -31,8 +30,7 @@ var (
 type (
 	JobUseCase struct {
 		repo         JobRepo
-		orderUseCase OrderUseCase
-		procTimeout  time.Duration
+		orderUseCase *OrderUseCase
 		tx           trm.Manager
 	}
 	JobRepo interface {
@@ -43,13 +41,16 @@ type (
 	}
 )
 
-func (uc *JobUseCase) Enqueue(ctx context.Context, entityID uuid.UUID, jobType entity.JobType) error {
-	job, err := entity.NewJob(entityID, jobType)
-	if err != nil {
-		return err
+func NewJobUseCase(
+	jobRepo JobRepo,
+	orderUseCase *OrderUseCase,
+	trm trm.Manager,
+) *JobUseCase {
+	return &JobUseCase{
+		repo:         jobRepo,
+		orderUseCase: orderUseCase,
+		tx:           trm,
 	}
-
-	return uc.repo.Create(ctx, job)
 }
 
 func (uc *JobUseCase) Fetch(ctx context.Context, count uint) ([]entity.Job, error) {
@@ -65,8 +66,8 @@ func (uc *JobUseCase) Handle(ctx context.Context, job entity.Job) error {
 	}
 }
 
-func (uc *JobUseCase) FixProcessing(ctx context.Context) error {
-	return uc.repo.FixProcessing(ctx, uc.procTimeout)
+func (uc *JobUseCase) FixProcessing(ctx context.Context, procTimeout time.Duration) error {
+	return uc.repo.FixProcessing(ctx, procTimeout)
 }
 
 func (uc *JobUseCase) Fail(

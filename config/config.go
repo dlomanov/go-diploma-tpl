@@ -4,7 +4,9 @@ import (
 	"embed"
 	"flag"
 	"github.com/ilyakaznacheev/cleanenv"
+	"gopkg.in/yaml.v3"
 	"io/fs"
+	"log"
 	"os"
 	"time"
 )
@@ -20,8 +22,8 @@ type (
 	}
 
 	App struct {
-		PassHashCost   int           `yaml:"pass_hash_cost" env:"PASS_HASH_COST"`
-		TokenSecretKey string        `yaml:"token_secret_key" env:"TOKEN_SECRET_KEY"`
+		PassHashCost   int           `yaml:"pass_hash_cost,omitempty" env:"PASS_HASH_COST"`
+		TokenSecretKey string        `yaml:"token_secret_key,omitempty" env:"TOKEN_SECRET_KEY"`
 		TokenExpires   time.Duration `yaml:"token_expires" env:"TOKEN_EXPIRES"`
 	}
 
@@ -48,6 +50,7 @@ type (
 		PipelineShutdownTimeout time.Duration `yaml:"shutdown_timeout" env:"PIPELINE_SHUTDOWN_TIMEOUT"`
 		PipelinePollDelay       time.Duration `yaml:"poll_delay" env:"PIPELINE_POLL_DELAY"`
 		PipelineFixDelay        time.Duration `yaml:"fix_delay" env:"PIPELINE_FIX_DELAY"`
+		PipelineFixProcTimeout  time.Duration `yaml:"fix_proc_timeout" env:"PIPELINE_FIX_PROC_TIMEOUT"`
 	}
 )
 
@@ -59,7 +62,7 @@ const (
 //go:embed config.yml
 var configFile embed.FS
 
-func NewConfig() (*Config, error) {
+func NewConfig() *Config {
 	cfg := new(Config)
 
 	parseFile := func() error {
@@ -72,7 +75,7 @@ func NewConfig() (*Config, error) {
 		return cleanenv.ParseYAML(file, cfg)
 	}
 	if err := parseFile(); err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
 
 	f := flag.NewFlagSet("", flag.ContinueOnError)
@@ -81,12 +84,23 @@ func NewConfig() (*Config, error) {
 	f.StringVar(&cfg.PG.DatabaseURI, "d", cfg.PG.DatabaseURI, "postgres database uri")
 	err := f.Parse(os.Args[1:])
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
 
 	if err = cleanenv.ReadEnv(cfg); err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
 
-	return cfg, nil
+	return cfg
+}
+
+func (c Config) Print() {
+	c.TokenSecretKey = ""
+	c.PassHashCost = 0
+
+	cStr, err := yaml.Marshal(c)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("config:\n%s\n", cStr)
 }

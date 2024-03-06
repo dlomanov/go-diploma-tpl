@@ -1,7 +1,7 @@
 package checksum_test
 
 import (
-	"github.com/dlomanov/go-diploma-tpl/internal/infra/algo/checksum"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/services/checksum"
 	"github.com/stretchr/testify/require"
 	"testing"
 )

@@ -53,7 +53,7 @@ loop:
 				break loop
 			}
 		case <-ctx.Done():
-			p.logger.Debug("cancelled", workerID)
+			p.logger.Debug("catch cancellation", workerID)
 			break loop
 		}
 

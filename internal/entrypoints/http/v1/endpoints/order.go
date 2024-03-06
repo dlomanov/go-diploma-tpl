@@ -36,6 +36,18 @@ func UseOrderEndpoints(router chi.Router, c *deps.Container) {
 	router.Get("/api/user/orders", e.getOrders)
 }
 
+// @Router		/api/user/orders [post]
+// @Tags		orders
+// @Accept		plain
+//
+// @Param		request	body		string	true	"order number"
+// @Param		token	header		string	true	"token with Bearer schema"
+//
+// @Success	200		{string}	string	"order processing"
+// @Success	202		{string}	string	"order accepted"
+// @Failure	401		{string}	string	"invalid creds"
+// @Failure	415		{string}	string	"unsupported content type"
+// @Failure	500		{string}	string	"internal server error"
 func (e *orderEndpoints) createOrder(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
@@ -44,8 +56,8 @@ func (e *orderEndpoints) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if v, ok := getContentType(r, ContentTypeText); !ok {
-		e.logger.Debug("unsupported content type", zap.String("content_type", v))
-		w.WriteHeader(http.StatusBadRequest)
+		e.logger.Debug(UnsupportedContentType, zap.String("content_type", v))
+		w.WriteHeader(http.StatusUnsupportedMediaType)
 		return
 	}
 
@@ -73,6 +85,17 @@ func (e *orderEndpoints) createOrder(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Router		/api/user/orders [get]
+// @Tags		orders
+// @Produce	json
+//
+// @Param		token	header		string					true	"token with Bearer schema"
+//
+// @Success	200		{array}		endpoints.orderResponse	"orders"
+// @Success	204		{string}	string					"no result"
+// @Failure	401		{string}	string					"invalid creds"
+// @Failure	415		{string}	string					"unsupported content type"
+// @Failure	500		{string}	string					"internal server error"
 func (e *orderEndpoints) getOrders(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {

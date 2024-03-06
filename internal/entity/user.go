@@ -45,3 +45,11 @@ func NewUser(creds HashCreds) (User, error) {
 		UpdatedAt: now,
 	}, nil
 }
+
+func (c Creds) Valid() bool {
+	return c.Login != "" && c.Pass != ""
+}
+
+func (t Token) Valid() bool {
+	return t != ""
+}

@@ -4,10 +4,12 @@ import (
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/dlomanov/go-diploma-tpl/config"
-	"github.com/dlomanov/go-diploma-tpl/internal/infra/algo/pass"
-	"github.com/dlomanov/go-diploma-tpl/internal/infra/algo/token"
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/logging"
-	repo2 "github.com/dlomanov/go-diploma-tpl/internal/infra/repo"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/repo"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/services/job"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/services/pass"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/services/token"
+	"github.com/dlomanov/go-diploma-tpl/internal/infra/services/validator"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
@@ -41,18 +43,31 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		return nil, err
 	}
 
-	userRepo := repo2.NewUserRepo(db, trmsqlx.DefaultCtxGetter)
-	balanceRepo := repo2.NewBalanceRepo(db, trmsqlx.DefaultCtxGetter)
+	getter := trmsqlx.DefaultCtxGetter
+	userRepo := repo.NewUserRepo(db, getter)
+	balanceRepo := repo.NewBalanceRepo(db, getter)
+	orderRepo := repo.NewOrderRepo(db, getter)
+	jobRepo := repo.NewJobRepo(db, getter)
+
 	hasher := pass.NewHasher(cfg.App.PassHashCost)
 	tokener := token.NewJWT([]byte(cfg.App.TokenSecretKey), cfg.App.TokenExpires)
-	authUseCase := usecase.NewAuthUseCase(userRepo, balanceRepo, hasher, tokener, trm)
+	orderValidator := validator.NewOrderValidator()
+	backgroundQueue := job.NewJobQueue(jobRepo)
+
+	authUseCase := usecase.NewAuthUseCase(logger, userRepo, balanceRepo, hasher, tokener, trm)
+	orderUseCase := usecase.NewOrderUseCase(orderRepo, balanceRepo, orderValidator, backgroundQueue, trm)
+	balanceUseCase := usecase.NewBalanceUseCase(orderRepo, balanceRepo, orderValidator, trm)
+	jobUseCase := usecase.NewJobUseCase(jobRepo, orderUseCase, trm)
 
 	return &Container{
-		Logger:      logger,
-		DB:          db,
-		AuthUseCase: authUseCase,
-		Tx:          trm,
-		Config:      cfg,
+		Logger:         logger,
+		DB:             db,
+		AuthUseCase:    authUseCase,
+		OrderUseCase:   orderUseCase,
+		BalanceUseCase: balanceUseCase,
+		JobUseCase:     jobUseCase,
+		Tx:             trm,
+		Config:         cfg,
 	}, nil
 }
 

@@ -59,7 +59,7 @@ func (r *MockUserRepo) Get(_ context.Context, login entity.Login) (entity.User, 
 	return user, nil
 }
 
-func (r *MockUserRepo) Save(_ context.Context, user entity.User) error {
+func (r *MockUserRepo) Create(_ context.Context, user entity.User) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if _, ok := r.storage[user.Login]; ok {
@@ -120,7 +120,7 @@ func (r *MockOrderRepo) GetAll(
 	return result, nil
 }
 
-func (r *MockOrderRepo) Save(
+func (r *MockOrderRepo) Create(
 	_ context.Context,
 	order entity.Order,
 ) error {

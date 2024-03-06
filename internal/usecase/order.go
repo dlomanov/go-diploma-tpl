@@ -23,13 +23,13 @@ type (
 		balanceRepo   BalanceRepo
 		validator     OrderValidator
 		accrualAPI    OrderAccrualAPI
-		backgroundJob BackgroundJob
+		backgroundJob BackgroundQueue
 		tx            trm.Manager
 	}
 	OrderRepo interface {
 		Get(ctx context.Context, id entity.OrderID) (entity.Order, error)
 		GetAll(ctx context.Context, filter *OrderFilter) ([]entity.Order, error)
-		Save(ctx context.Context, order entity.Order) error
+		Create(ctx context.Context, order entity.Order) error
 		Update(ctx context.Context, order entity.Order) error
 	}
 	OrderFilter struct {
@@ -43,8 +43,8 @@ type (
 	OrderAccrualAPI interface {
 		Get(ctx context.Context, number entity.OrderNumber) (entity.OrderAccrual, error)
 	}
-	BackgroundJob interface {
-		Enqueue(entityID uuid.UUID, jobType entity.JobType) error
+	BackgroundQueue interface {
+		Enqueue(ctx context.Context, entityID uuid.UUID, jobType entity.JobType) error
 	}
 )
 
@@ -52,13 +52,15 @@ func NewOrderUseCase(
 	orderRepo OrderRepo,
 	balanceRepo BalanceRepo,
 	validator OrderValidator,
+	backgroundQueue BackgroundQueue,
 	tx trm.Manager,
 ) *OrderUseCase {
 	return &OrderUseCase{
-		orderRepo:   orderRepo,
-		balanceRepo: balanceRepo,
-		validator:   validator,
-		tx:          tx,
+		orderRepo:     orderRepo,
+		balanceRepo:   balanceRepo,
+		validator:     validator,
+		backgroundJob: backgroundQueue,
+		tx:            tx,
 	}
 }
 
@@ -87,10 +89,10 @@ func (uc *OrderUseCase) Create(
 	}
 
 	err = uc.tx.Do(ctx, func(ctx context.Context) error {
-		if err = uc.orderRepo.Save(ctx, *order); err != nil {
+		if err = uc.orderRepo.Create(ctx, *order); err != nil {
 			return err
 		}
-		return uc.backgroundJob.Enqueue(uuid.UUID(order.ID), entity.JobTypePollAccrual)
+		return uc.backgroundJob.Enqueue(ctx, uuid.UUID(order.ID), entity.JobTypePollAccrual)
 	})
 	if err != nil {
 		return err

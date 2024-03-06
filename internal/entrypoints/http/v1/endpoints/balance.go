@@ -43,6 +43,13 @@ func UseBalanceEndpoints(router chi.Router, c *deps.Container) {
 	router.Get("/api/user/withdrawals", e.getWithdrawals)
 }
 
+// @Router		/api/user/balance [get]
+// @Tags		balance
+// @Produce	json
+// @Param		token	header		string						true	"token with Bearer schema"
+// @Success	200		{object}	endpoints.balanceResponse	"ok"
+// @Failure	401		{string}	string						"invalid token"
+// @Failure	500		{string}	string						"internal server error"
 func (e *balanceEndpoints) getBalance(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
@@ -67,6 +74,19 @@ func (e *balanceEndpoints) getBalance(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Router		/api/user/balance/withdraw [post]
+// @Tags		balance
+// @Accept		json
+//
+// @Param		request	body		endpoints.withdrawRequest	true	"order number and withdraw sum"
+// @Param		token	header		string						true	"token with Bearer schema"
+//
+// @Success	200		{string}	string						"ok"
+// @Failure	401		{string}	string						"invalid creds"
+// @Failure	402		{string}	string						"not enough founds"
+// @Failure	415		{string}	string						"unsupported content type"
+// @Failure	422		{string}	string						"invalid order number"
+// @Failure	500		{string}	string						"internal server error"
 func (e *balanceEndpoints) withdraw(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
@@ -75,8 +95,8 @@ func (e *balanceEndpoints) withdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if v, ok := getContentType(r, ContentTypeText); !ok {
-		e.logger.Debug("unsupported content type", zap.String("content_type", v))
-		w.WriteHeader(http.StatusBadRequest)
+		e.logger.Debug(UnsupportedContentType, zap.String("content_type", v))
+		w.WriteHeader(http.StatusUnsupportedMediaType)
 		return
 	}
 
@@ -105,6 +125,16 @@ func (e *balanceEndpoints) withdraw(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Router		/api/user/withdrawals [get]
+// @Tags		withdrawals
+//
+// @Param		token	header		string						true	"token with Bearer schema"
+//
+// @Success	200		{array}		endpoints.withdrawResponse	"ok"
+// @Success	204		{string}	string						"no result"
+// @Failure	401		{string}	string						"invalid creds"
+// @Failure	415		{string}	string						"unsupported content type"
+// @Failure	500		{string}	string						"internal server error"
 func (e *balanceEndpoints) getWithdrawals(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {

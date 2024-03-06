@@ -12,10 +12,19 @@ import (
 	"net/http"
 )
 
-type authEndpoints struct {
-	logger      *zap.Logger
-	authUseCase *usecase.AuthUseCase
-}
+type (
+	authEndpoints struct {
+		logger      *zap.Logger
+		authUseCase *usecase.AuthUseCase
+	}
+	loginRequest struct {
+		Login string `json:"login"`
+		Pass  string `json:"password"`
+	}
+	loginErrorResponse struct {
+		Errors []string `json:"validation_errors"`
+	}
+)
 
 func UseAuthEndpoints(router chi.Router, c *deps.Container) {
 	e := &authEndpoints{
@@ -23,18 +32,32 @@ func UseAuthEndpoints(router chi.Router, c *deps.Container) {
 		authUseCase: c.AuthUseCase,
 	}
 
-	router.Post("/api/user/register", e.Register)
-	router.Post("/api/user/login", e.Login)
+	router.Post("/api/user/register", e.register)
+	router.Post("/api/user/login", e.login)
 }
 
-func (e *authEndpoints) Register(w http.ResponseWriter, r *http.Request) {
+// @Router		/api/user/register [post]
+//
+// @Tags		auth
+// @Accept		json
+//
+// @Param		request	body		endpoints.loginRequest			true	"user creds"
+//
+// @Success	200		{string}	string							"ok"
+// @Failure	400		{object}	endpoints.loginErrorResponse	"validation failed"
+// @Failure	401		{string}	string							"invalid creds"
+// @Failure	415		{string}	string							"unsupported content type"
+// @Failure	500		{string}	string							"internal server error"
+//
+// @Header		200		{string}	Authorization					"<schema> <token>"
+func (e *authEndpoints) register(w http.ResponseWriter, r *http.Request) {
 	if h, ok := getContentType(r, ContentTypeJSON); !ok {
-		e.logger.Debug("unsupported content type", zap.String("content_type", h))
-		w.WriteHeader(http.StatusBadRequest)
+		e.logger.Debug(UnsupportedContentType, zap.String("content_type", h))
+		w.WriteHeader(http.StatusUnsupportedMediaType)
 		return
 	}
 
-	model := new(request)
+	model := new(loginRequest)
 	if err := json.NewDecoder(r.Body).Decode(model); err != nil {
 		e.logger.Error("failed to decode json request", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -61,14 +84,26 @@ func (e *authEndpoints) Register(w http.ResponseWriter, r *http.Request) {
 	e.writeToken(w, token)
 }
 
-func (e *authEndpoints) Login(w http.ResponseWriter, r *http.Request) {
+// @Router		/api/user/login [post]
+// @Tags		auth
+//
+// @Param		request	body		endpoints.loginRequest			true	"user creds"
+//
+// @Success	200		{string}	string							"ok"
+// @Failure	400		{object}	endpoints.loginErrorResponse	"validation failed"
+// @Failure	401		{string}	string							"invalid creds"
+// @Failure	415		{string}	string							"unsupported content type"
+// @Failure	500		{string}	string							"internal server error"
+//
+// @Header		200		{string}	Authorization					"<schema> <token>"
+func (e *authEndpoints) login(w http.ResponseWriter, r *http.Request) {
 	if h, ok := getContentType(r, ContentTypeJSON); !ok {
-		e.logger.Debug("unsupported content type", zap.String("content_type", h))
-		w.WriteHeader(http.StatusBadRequest)
+		e.logger.Debug(UnsupportedContentType, zap.String("content_type", h))
+		w.WriteHeader(http.StatusUnsupportedMediaType)
 		return
 	}
 
-	model := new(request)
+	model := new(loginRequest)
 	if err := json.NewDecoder(r.Body).Decode(model); err != nil {
 		e.logger.Error("failed to unmarshal json request", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -98,16 +133,7 @@ func (e *authEndpoints) Login(w http.ResponseWriter, r *http.Request) {
 	e.writeToken(w, token)
 }
 
-type request struct {
-	Login string `json:"login"`
-	Pass  string `json:"password"`
-}
-
-type response struct {
-	Errors []string `json:"validation_errors"`
-}
-
-func (req request) validate() []error {
+func (req loginRequest) validate() []error {
 	var errs = make([]error, 0)
 	if req.Login == "" {
 		errs = append(errs, fmt.Errorf("login must be specified"))
@@ -119,20 +145,20 @@ func (req request) validate() []error {
 	return errs
 }
 
-func (req request) toEntity() entity.Creds {
+func (req loginRequest) toEntity() entity.Creds {
 	return entity.Creds{
 		Login: entity.Login(req.Login),
 		Pass:  entity.Pass(req.Pass),
 	}
 }
 
-func newResponse(errs []error) response {
+func newResponse(errs []error) loginErrorResponse {
 	errstrs := make([]string, len(errs))
 	for i, err := range errs {
 		errstrs[i] = err.Error()
 	}
 
-	return response{
+	return loginErrorResponse{
 		Errors: errstrs,
 	}
 }

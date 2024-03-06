@@ -21,6 +21,8 @@ func Run(cfg *config.Config) error {
 	}
 	defer c.Close()
 
+	c.Logger.Info("run app")
+
 	server := startServer(c)
 	pipe := startPipeline(c)
 	wait(c, server, pipe)
@@ -47,7 +49,9 @@ func shutdownServer(c *deps.Container, s *httpserver.Server) {
 	c.Logger.Debug("server shutdown")
 	if err := s.Shutdown(); err != nil {
 		c.Logger.Error("server shutdown error", zap.Error(err))
+		return
 	}
+	c.Logger.Debug("server shutdown - ok")
 }
 
 func startPipeline(c *deps.Container) *pipeline.Pipe {
@@ -59,8 +63,10 @@ func startPipeline(c *deps.Container) *pipeline.Pipe {
 func shutdownPipeline(c *deps.Container, p *pipeline.Pipe) {
 	c.Logger.Debug("pipeline shutdown")
 	if err := p.Shutdown(); err != nil {
-		c.Logger.Error("pipeline shutdown error", zap.Error(err))
+		c.Logger.Error("pipeline shutdown - error", zap.Error(err))
+		return
 	}
+	c.Logger.Debug("pipeline shutdown - ok")
 }
 
 func wait(
@@ -73,7 +79,7 @@ func wait(
 
 	select {
 	case s := <-terminate:
-		c.Logger.Error("cached terminate signal", zap.String("signal", s.String()))
+		c.Logger.Info("cached terminate signal", zap.String("signal", s.String()))
 	case err := <-pipe.Notify():
 		c.Logger.Error("pipe notified error", zap.Error(err))
 	case err := <-server.Notify():

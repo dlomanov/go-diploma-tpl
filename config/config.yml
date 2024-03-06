@@ -21,3 +21,4 @@ pipeline:
   shutdown_timeout: "3s"
   poll_delay: "5s"
   fix_delay: "5m"
+  fix_proc_timeout: "5m"

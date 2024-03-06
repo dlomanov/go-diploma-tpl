@@ -35,6 +35,16 @@ type (
 	}
 )
 
+func NewJobRepo(
+	db *sqlx.DB,
+	getter *trmsqlx.CtxGetter,
+) *JobRepo {
+	return &JobRepo{
+		db:     db,
+		getter: getter,
+	}
+}
+
 func (r *JobRepo) Create(
 	ctx context.Context,
 	job entity.Job,
@@ -78,7 +88,7 @@ func (r *JobRepo) GetUpdate(
 			SELECT id FROM jobs
 			WHERE next_attempt_at is not null
 			ORDER BY next_attempt_at
-			LIMIT $3
+			LIMIT $2
 			FOR UPDATE SKIP LOCKED
 		)
 		RETURNING
@@ -92,14 +102,13 @@ func (r *JobRepo) GetUpdate(
 			created_at,
 			updated_at;`,
 		entity.JobStatusProcessing,
-		entity.JobStatusNew,
 		count)
 
 	switch {
-	case errors.Is(err, sql.ErrNoRows):
-		return nil, usecase.ErrJobNotFound
 	case err != nil:
 		return nil, err
+	case len(rows) == 0:
+		return nil, usecase.ErrJobNotFound
 	default:
 		return rows.toEntities(), nil
 	}

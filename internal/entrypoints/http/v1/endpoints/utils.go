@@ -15,8 +15,9 @@ const (
 	ContentTypeJSON     = "application/json"
 	ContentTypeText     = "text/plain"
 
-	NoUserID      = "UserID not defined"
-	InternalError = "unexpected internal error"
+	NoUserID               = "UserID not defined"
+	InternalError          = "unexpected internal error"
+	UnsupportedContentType = "unsupported content type"
 )
 
 func getContentType(r *http.Request, contentType string) (string, bool) {

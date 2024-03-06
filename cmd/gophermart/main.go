@@ -1,26 +1,21 @@
 package main
 
 import (
+	"log"
+
 	"github.com/dlomanov/go-diploma-tpl/config"
 	"github.com/dlomanov/go-diploma-tpl/internal/app"
-	"log"
 )
 
 func main() {
-	cfg, err := config.NewConfig()
-	if err != nil {
+	cfg := config.NewConfig()
+	cfg.Print()
+
+	if err := app.RunMigration(cfg); err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("%+v\n", cfg)
-
-	log.Println("run migrations")
-	if err = app.RunMigration(cfg); err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("run app")
-	if err = app.Run(cfg); err != nil {
+	if err := app.Run(cfg); err != nil {
 		log.Fatal(err)
 	}
 }

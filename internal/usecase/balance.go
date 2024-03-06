@@ -57,20 +57,21 @@ func (uc *BalanceUseCase) Withdraw(
 		return ErrOrderNumberInvalid
 	}
 
-	order, err := entity.NewOutcomeOrder(number, amount, userID)
+	outcomeOrder, err := entity.NewOutcomeOrder(number, amount, userID)
 	if err != nil {
 		return err
 	}
+	order := *outcomeOrder
 
 	return uc.tx.Do(ctx, func(ctx context.Context) error {
 		balance, err := uc.balanceRepo.Get(ctx, userID)
 		if err != nil {
 			return nil
 		}
-		if err = balance.Update(*order); err != nil {
+		if err = balance.Update(order); err != nil {
 			return err
 		}
-		if err = uc.orderRepo.Save(ctx, *order); err != nil {
+		if err = uc.orderRepo.Create(ctx, order); err != nil {
 			return err
 		}
 		return uc.balanceRepo.Update(ctx, balance)

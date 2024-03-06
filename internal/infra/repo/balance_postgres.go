@@ -29,10 +29,13 @@ type (
 	}
 )
 
-func NewBalanceRepo(db *sqlx.DB, c *trmsqlx.CtxGetter) *BalanceRepo {
+func NewBalanceRepo(
+	db *sqlx.DB,
+	getter *trmsqlx.CtxGetter,
+) *BalanceRepo {
 	return &BalanceRepo{
 		db:     db,
-		getter: c,
+		getter: getter,
 	}
 }
 

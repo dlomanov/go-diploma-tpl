@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"errors"
 	"github.com/dlomanov/go-diploma-tpl/internal/deps"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	"go.uber.org/zap"
@@ -12,7 +13,6 @@ import (
 
 type (
 	Pipe struct {
-		jobUseCase      *usecase.JobUseCase
 		logger          *zap.Logger
 		bufferSize      uint
 		pollDelay       time.Duration
@@ -20,9 +20,11 @@ type (
 		notify          chan error
 		shutdown        func()
 		shutdownTimeout time.Duration
-		fixProcDelay    time.Duration
+		fixDelay        time.Duration
+		fixProcTimeout  time.Duration
 		handleMu        sync.RWMutex
 		pollTriggerCh   chan struct{}
+		jobUseCase      *usecase.JobUseCase
 	}
 )
 
@@ -33,7 +35,8 @@ func New(c *deps.Container) *Pipe {
 		logger:          c.Logger,
 		bufferSize:      c.Config.PipelineBufferSize,
 		pollDelay:       c.Config.PipelinePollDelay,
-		fixProcDelay:    c.Config.PipelineFixDelay,
+		fixDelay:        c.Config.PipelineFixDelay,
+		fixProcTimeout:  c.Config.PipelineFixProcTimeout,
 		shutdownTimeout: c.Config.PipelineShutdownTimeout,
 		notify:          make(chan error, 1),
 		shutdown:        cancel,
@@ -77,6 +80,9 @@ func (p *Pipe) Shutdown() error {
 	case err, ok := <-p.notify:
 		if !ok {
 			p.logger.Debug("pipeline already shutdown")
+			return nil
+		}
+		if errors.Is(err, context.Canceled) {
 			return nil
 		}
 		return err
