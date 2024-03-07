@@ -3,8 +3,10 @@ package usecase
 import (
 	"context"
 	"errors"
+
 	"github.com/avito-tech/go-transaction-manager/trm/v2"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
+	"github.com/shopspring/decimal"
 )
 
 var (
@@ -50,7 +52,7 @@ func (uc *BalanceUseCase) GetBalance(
 func (uc *BalanceUseCase) Withdraw(
 	ctx context.Context,
 	number entity.OrderNumber,
-	amount entity.Amount,
+	amount decimal.Decimal,
 	userID entity.UserID,
 ) error {
 	if !uc.orderValidator.ValidateNumber(number) {

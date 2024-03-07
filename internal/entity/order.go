@@ -6,6 +6,7 @@ import (
 
 	"github.com/dlomanov/go-diploma-tpl/internal/entity/apperrors"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 const (
@@ -47,7 +48,7 @@ type (
 	OrderType    string
 	OrderEvent   Event
 	OrderAccrual struct {
-		Amount Amount
+		Amount decimal.Decimal
 		Status OrderStatus
 	}
 	Order struct {
@@ -55,7 +56,7 @@ type (
 		Number    OrderNumber
 		Type      OrderType
 		Status    OrderStatus
-		Amount    Amount
+		Amount    decimal.Decimal
 		UserID    UserID
 		CreatedAt time.Time
 		UpdatedAt time.Time
@@ -78,7 +79,7 @@ func NewIncomeOrder(
 		Number:    number,
 		Type:      OrderTypeIncome,
 		Status:    OrderStatusNew,
-		Amount:    ZeroAmount(),
+		Amount:    decimal.Zero,
 		UserID:    userID,
 		CreatedAt: now,
 		UpdatedAt: now,
@@ -88,7 +89,7 @@ func NewIncomeOrder(
 
 func NewOutcomeOrder(
 	number OrderNumber,
-	amount Amount,
+	amount decimal.Decimal,
 	userID UserID,
 ) (*Order, error) {
 	orderID, err := NewOrderID()
@@ -122,6 +123,8 @@ func (o *Order) Update(accrual OrderAccrual) (err error) {
 	switch accrual.Status {
 	case OrderStatusProcessed:
 		o.Amount = accrual.Amount
+		o.Events = append(o.Events, Event(OrderEventCompleted))
+	case OrderStatusInvalid:
 		o.Events = append(o.Events, Event(OrderEventCompleted))
 	default:
 		o.Events = append(o.Events, Event(OrderEventUpdated))

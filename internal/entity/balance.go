@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 var (
@@ -15,8 +17,8 @@ var (
 
 type Balance struct {
 	UserID    UserID
-	Current   Amount
-	Withdrawn Amount
+	Current   decimal.Decimal
+	Withdrawn decimal.Decimal
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -25,8 +27,8 @@ func NewBalance(userID UserID) Balance {
 	now := utcNow()
 	return Balance{
 		UserID:    userID,
-		Current:   ZeroAmount(),
-		Withdrawn: ZeroAmount(),
+		Current:   decimal.Zero,
+		Withdrawn: decimal.Zero,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -53,12 +55,12 @@ func (b *Balance) Update(order Order) error {
 	}
 }
 
-func (b *Balance) put(amount Amount) error {
+func (b *Balance) put(amount decimal.Decimal) error {
 	b.Current = b.Current.Add(amount)
 	return nil
 }
 
-func (b *Balance) withdraw(amount Amount) error {
+func (b *Balance) withdraw(amount decimal.Decimal) error {
 	if b.Current.Sub(amount).IsNegative() {
 		return ErrBalanceNotEnoughFounds
 	}

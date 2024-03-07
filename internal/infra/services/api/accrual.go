@@ -122,7 +122,7 @@ func (a *AccrualAPI) toEntity(
 	}
 
 	return entity.OrderAccrual{
-		Amount: entity.Amount(r.Accrual),
+		Amount: r.Accrual,
 		Status: s,
 	}, nil
 }

@@ -14,7 +14,9 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var _ usecase.BalanceRepo = (*BalanceRepo)(nil)
+var (
+	_ usecase.BalanceRepo = (*BalanceRepo)(nil)
+)
 
 type (
 	BalanceRepo struct {
@@ -72,7 +74,7 @@ func (r *BalanceRepo) Get(
 
 func (r *BalanceRepo) Save(ctx context.Context, balance entity.Balance) error {
 	db := r.getDB(ctx)
-	bRow := toBalanceRow(balance)
+	bRow := r.toRow(balance)
 
 	result, err := db.NamedExecContext(ctx, `
 		INSERT INTO balances (user_id, current, withdrawn, created_at, updated_at)
@@ -95,7 +97,7 @@ func (r *BalanceRepo) Save(ctx context.Context, balance entity.Balance) error {
 
 func (r *BalanceRepo) Update(ctx context.Context, balance entity.Balance) error {
 	db := r.getDB(ctx)
-	bRow := toBalanceRow(balance)
+	bRow := r.toRow(balance)
 
 	result, err := db.NamedExecContext(ctx, `
 		UPDATE balances
@@ -122,11 +124,11 @@ func (r *BalanceRepo) getDB(ctx context.Context) trmsqlx.Tr {
 	return r.getter.DefaultTrOrDB(ctx, r.db)
 }
 
-func toBalanceRow(balance entity.Balance) balanceRow {
+func (*BalanceRepo) toRow(balance entity.Balance) balanceRow {
 	return balanceRow{
 		UserID:    uuid.UUID(balance.UserID),
-		Current:   decimal.Decimal(balance.Current),
-		Withdrawn: decimal.Decimal(balance.Withdrawn),
+		Current:   balance.Current.Round(decimalPlaces),
+		Withdrawn: balance.Withdrawn.Round(decimalPlaces),
 		CreatedAt: balance.CreatedAt,
 		UpdatedAt: balance.UpdatedAt,
 	}
@@ -135,8 +137,8 @@ func toBalanceRow(balance entity.Balance) balanceRow {
 func (row balanceRow) toEntity() entity.Balance {
 	return entity.Balance{
 		UserID:    entity.UserID(row.UserID),
-		Current:   entity.Amount(row.Current),
-		Withdrawn: entity.Amount(row.Withdrawn),
+		Current:   row.Current,
+		Withdrawn: row.Withdrawn,
 		CreatedAt: row.CreatedAt,
 		UpdatedAt: row.UpdatedAt,
 	}

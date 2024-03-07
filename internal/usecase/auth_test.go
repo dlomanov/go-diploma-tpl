@@ -3,16 +3,18 @@ package usecase_test
 import (
 	"context"
 	"errors"
+	"testing"
+	"time"
+
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/services/pass"
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/services/token"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase/mocks"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"testing"
-	"time"
 )
 
 const (
@@ -186,8 +188,8 @@ func TestAuthUseCase(t *testing.T) {
 
 			balance, err := balanceRepo.Get(ctx, userID)
 			require.NoErrorf(t, err, "%s: error '%v' occured while getting balance", tt.args.action, err)
-			require.Equal(t, balance.Current, entity.ZeroAmount(), "%s: current balance should be zero after creation", tt.args.action)
-			require.Equal(t, balance.Withdrawn, entity.ZeroAmount(), "%s: withdrawn balance should be zero after creation", tt.args.action)
+			require.True(t, balance.Current.Equal(decimal.Zero), "%s: current balance should be zero after creation", tt.args.action)
+			require.True(t, balance.Withdrawn.Equal(decimal.Zero), "%s: withdrawn balance should be zero after creation", tt.args.action)
 		})
 	}
 }

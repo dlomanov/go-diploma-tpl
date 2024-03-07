@@ -136,7 +136,7 @@ func (r *OrderRepo) GetAll(
 
 func (r *OrderRepo) Create(ctx context.Context, order entity.Order) error {
 	db := r.getDB(ctx)
-	row, err := toOrderRow(order)
+	row, err := r.toRow(order)
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (r *OrderRepo) Create(ctx context.Context, order entity.Order) error {
 
 func (r *OrderRepo) Update(ctx context.Context, order entity.Order) error {
 	db := r.getDB(ctx)
-	row, err := toOrderRow(order)
+	row, err := r.toRow(order)
 	if err != nil {
 		return err
 	}
@@ -193,7 +193,7 @@ func (r *OrderRepo) getDB(ctx context.Context) trmsqlx.Tr {
 	return r.getter.DefaultTrOrDB(ctx, r.db)
 }
 
-func toOrderRow(order entity.Order) (orderRow, error) {
+func (*OrderRepo) toRow(order entity.Order) (orderRow, error) {
 	row := orderRow{
 		ID:        uuid.UUID(order.ID),
 		Number:    string(order.Number),
@@ -205,9 +205,9 @@ func toOrderRow(order entity.Order) (orderRow, error) {
 	}
 	switch order.Type {
 	case entity.OrderTypeIncome:
-		row.Income = decimal.Decimal(order.Amount)
+		row.Income = order.Amount.Round(decimalPlaces)
 	case entity.OrderTypeOutcome:
-		row.Outcome = decimal.Decimal(order.Amount)
+		row.Outcome = order.Amount.Round(decimalPlaces)
 	default:
 		return orderRow{}, usecase.ErrOrderTypeInvalid
 	}
@@ -244,9 +244,9 @@ func (row orderRow) toEntity() (entity.Order, error) {
 	}
 	switch order.Type {
 	case entity.OrderTypeIncome:
-		order.Amount = entity.Amount(row.Income)
+		order.Amount = row.Income
 	case entity.OrderTypeOutcome:
-		order.Amount = entity.Amount(row.Outcome)
+		order.Amount = row.Outcome
 	default:
 		return entity.Order{}, usecase.ErrOrderTypeInvalid
 	}

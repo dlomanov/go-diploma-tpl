@@ -111,7 +111,7 @@ func (e *balanceEndpoints) withdraw(w http.ResponseWriter, r *http.Request) {
 	err = e.balanceUseCase.Withdraw(
 		r.Context(),
 		entity.OrderNumber(model.Order),
-		entity.Amount(model.Sum),
+		model.Sum,
 		userID)
 	switch {
 	case errors.Is(err, usecase.ErrOrderNumberInvalid):
