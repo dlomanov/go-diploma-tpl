@@ -4,7 +4,6 @@ import (
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/dlomanov/go-diploma-tpl/config"
-	"github.com/dlomanov/go-diploma-tpl/internal/infra/logging"
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/pipeline"
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/repo"
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/services/api"
@@ -30,12 +29,7 @@ type Container struct {
 	Tx             *manager.Manager
 }
 
-func NewContainer(cfg *config.Config) (*Container, error) {
-	logger, err := logging.NewLogger(cfg)
-	if err != nil {
-		return nil, err
-	}
-
+func NewContainer(logger *zap.Logger, cfg *config.Config) (*Container, error) {
 	db, err := sqlx.Connect("pgx", cfg.PG.DatabaseURI)
 	if err != nil {
 		return nil, err
@@ -46,7 +40,16 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		return nil, err
 	}
 
-	pl := pipeline.New(logger, cfg)
+	pl := pipeline.New(
+		logger,
+		pipeline.Config{
+			BufferSize:        cfg.PipelineBufferSize,
+			PollDelay:         cfg.PipelinePollDelay,
+			FixDelay:          cfg.PipelineFixDelay,
+			FixProcTimeout:    cfg.PipelineFixProcTimeout,
+			HandleWorkerCount: cfg.PipelineHandleWorkerCount,
+			ShutdownTimeout:   cfg.PipelineShutdownTimeout,
+		})
 
 	// repos
 	getter := trmsqlx.DefaultCtxGetter

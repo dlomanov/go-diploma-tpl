@@ -10,11 +10,6 @@ import (
 )
 
 const (
-	OrderEventUpdated   OrderEvent = "order_event_status_updated"
-	OrderEventCompleted OrderEvent = "order_event_accrual_updated"
-)
-
-const (
 	OrderTypeIncome  OrderType = "INCOME"
 	OrderTypeOutcome OrderType = "OUTCOME"
 )
@@ -34,11 +29,10 @@ const (
 )
 
 var (
-	ErrOrderNegativeAmount = apperrors.NewInvalid("order amount should be positive")
-	ErrOrderTypeInvalid    = apperrors.NewInvalid("invalid order type")
-	ErrOrderStatusInvalid  = apperrors.NewInvalid("invalid order status")
-	ErrOrderEventInvalid   = apperrors.NewInvalid("invalid order event")
-	ErrOrderStatusFinal    = fmt.Errorf("%w: attempted update on order in final status", ErrOrderStatusInvalid)
+	ErrOrderZeroOrNegativeAmount = apperrors.NewInvalid("order amount should be greater than zero")
+	ErrOrderTypeInvalid          = apperrors.NewInvalid("invalid order type")
+	ErrOrderStatusInvalid        = apperrors.NewInvalid("invalid order status")
+	ErrOrderStatusFinal          = fmt.Errorf("%w: attempted update on order in final status", ErrOrderStatusInvalid)
 )
 
 type (
@@ -46,7 +40,6 @@ type (
 	OrderID      uuid.UUID
 	OrderStatus  string
 	OrderType    string
-	OrderEvent   Event
 	OrderAccrual struct {
 		Amount decimal.Decimal
 		Status OrderStatus
@@ -60,7 +53,6 @@ type (
 		UserID    UserID
 		CreatedAt time.Time
 		UpdatedAt time.Time
-		Events    Events
 	}
 )
 
@@ -83,7 +75,6 @@ func NewIncomeOrder(
 		UserID:    userID,
 		CreatedAt: now,
 		UpdatedAt: now,
-		Events:    NewEvents(),
 	}, nil
 }
 
@@ -97,8 +88,8 @@ func NewOutcomeOrder(
 		return nil, err
 	}
 
-	if amount.IsNegative() {
-		return nil, ErrOrderNegativeAmount
+	if amount.IsNegative() || amount.IsZero() {
+		return nil, ErrOrderZeroOrNegativeAmount
 	}
 
 	now := utcNow()
@@ -111,27 +102,19 @@ func NewOutcomeOrder(
 		UserID:    userID,
 		CreatedAt: now,
 		UpdatedAt: now,
-		Events:    NewEvents(),
 	}, nil
 }
 
 func (o *Order) Update(accrual OrderAccrual) (err error) {
-	if o.Status.Final() {
+	switch {
+	case o.Status.Final():
 		return ErrOrderStatusFinal
+	case accrual.Status == OrderStatusProcessed:
+		o.Amount = accrual.Amount
 	}
 
-	switch accrual.Status {
-	case OrderStatusProcessed:
-		o.Amount = accrual.Amount
-		o.Events = append(o.Events, Event(OrderEventCompleted))
-	case OrderStatusInvalid:
-		o.Events = append(o.Events, Event(OrderEventCompleted))
-	default:
-		o.Events = append(o.Events, Event(OrderEventUpdated))
-	}
 	o.Status = accrual.Status
 	o.UpdatedAt = utcNow()
-
 	return nil
 }
 

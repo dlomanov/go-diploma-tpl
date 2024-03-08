@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/dlomanov/go-diploma-tpl/config"
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/pipeline/stages"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -13,16 +12,19 @@ import (
 
 type (
 	Pipeline struct {
-		logger            *zap.Logger
-		bufferSize        uint
-		pollDelay         time.Duration
-		handleWorkerCount uint
-		notify            chan error
-		shutdown          func()
-		shutdownTimeout   time.Duration
-		fixDelay          time.Duration
-		fixProcTimeout    time.Duration
-		stages            Stages
+		logger          *zap.Logger
+		notify          chan error
+		shutdown        func()
+		shutdownTimeout time.Duration
+		stages          Stages
+	}
+	Config struct {
+		BufferSize        uint
+		PollDelay         time.Duration
+		FixDelay          time.Duration
+		FixProcTimeout    time.Duration
+		HandleWorkerCount uint
+		ShutdownTimeout   time.Duration
 	}
 	Stages struct {
 		poll   *stages.PollStage
@@ -38,30 +40,24 @@ type (
 
 func New(
 	logger *zap.Logger,
-	cfg *config.Config,
+	cfg Config,
 ) *Pipeline {
 	return &Pipeline{
-		logger:            logger,
-		bufferSize:        cfg.PipelineBufferSize,
-		pollDelay:         cfg.PipelinePollDelay,
-		fixDelay:          cfg.PipelineFixDelay,
-		fixProcTimeout:    cfg.PipelineFixProcTimeout,
-		handleWorkerCount: cfg.PipelineHandleWorkerCount,
-		shutdownTimeout:   cfg.PipelineShutdownTimeout,
-		notify:            make(chan error, 1),
-		shutdown:          func() { /* noop */ },
+		logger:   logger,
+		notify:   make(chan error, 1),
+		shutdown: func() { /* noop */ },
 		stages: Stages{
 			poll: stages.NewPollStage(
 				logger,
-				cfg.PipelineBufferSize,
-				cfg.PipelinePollDelay),
+				cfg.BufferSize,
+				cfg.PollDelay),
 			handle: stages.NewHandleStage(
 				logger,
-				cfg.PipelineHandleWorkerCount),
+				cfg.HandleWorkerCount),
 			fix: stages.NewFixStage(
 				logger,
-				cfg.PipelineFixDelay,
-				cfg.PipelineFixProcTimeout),
+				cfg.FixDelay,
+				cfg.FixProcTimeout),
 		},
 	}
 }

@@ -237,7 +237,6 @@ func (row orderRow) toEntity() (entity.Order, error) {
 		UserID:    entity.UserID(row.UserID),
 		CreatedAt: row.CreatedAt,
 		UpdatedAt: row.UpdatedAt,
-		Events:    entity.NewEvents(),
 	}
 	if !order.Status.Valid() {
 		return entity.Order{}, usecase.ErrOrderStatusInvalid

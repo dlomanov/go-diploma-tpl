@@ -17,5 +17,5 @@ func NewOrderValidator() OrderValidator {
 }
 
 func (OrderValidator) ValidateNumber(number entity.OrderNumber) bool {
-	return checksum.ValidateLuhn([]byte(number))
+	return len(number) != 0 && checksum.ValidateLuhn([]byte(number))
 }

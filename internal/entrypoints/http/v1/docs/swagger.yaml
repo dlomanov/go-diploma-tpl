@@ -49,7 +49,7 @@ definitions:
     type: object
 info:
   contact: {}
-  title: gophermart API
+  title: gophermart AccrualAPI
   version: "1.0"
 paths:
   /api/user/balance:
@@ -219,8 +219,16 @@ paths:
           description: invalid creds
           schema:
             type: string
+        "409":
+          description: created by another user
+          schema:
+            type: string
         "415":
           description: unsupported content type
+          schema:
+            type: string
+        "422":
+          description: invalid number
           schema:
             type: string
         "500":
@@ -253,8 +261,8 @@ paths:
           description: validation failed
           schema:
             $ref: '#/definitions/endpoints.loginErrorResponse'
-        "401":
-          description: invalid creds
+        "409":
+          description: user already registered
           schema:
             type: string
         "415":

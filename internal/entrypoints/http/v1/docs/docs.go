@@ -273,8 +273,20 @@ const docTemplate = `{
                             "type": "string"
                         }
                     },
+                    "409": {
+                        "description": "created by another user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     "415": {
                         "description": "unsupported content type",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "422": {
+                        "description": "invalid number",
                         "schema": {
                             "type": "string"
                         }
@@ -326,8 +338,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/endpoints.loginErrorResponse"
                         }
                     },
-                    "401": {
-                        "description": "invalid creds",
+                    "409": {
+                        "description": "user already registered",
                         "schema": {
                             "type": "string"
                         }

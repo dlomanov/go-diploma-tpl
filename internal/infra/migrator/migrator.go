@@ -2,6 +2,7 @@ package migrator
 
 import (
 	"database/sql"
+
 	"github.com/dlomanov/go-diploma-tpl/migrations"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/lopezator/migrator"
@@ -25,7 +26,7 @@ func Migrate(databaseURI string, sugar *zap.SugaredLogger) error {
 		return err
 	}
 
-	logger := migrator.LoggerFunc(func(msg string, args ...interface{}) { sugar.Info(msg, args) })
+	logger := migrator.LoggerFunc(func(msg string, args ...any) { sugar.Info(msg, args) })
 	m, err := migrator.New(
 		ms,
 		migrator.WithLogger(logger),

@@ -68,7 +68,7 @@ func (uc *BalanceUseCase) Withdraw(
 	return uc.tx.Do(ctx, func(ctx context.Context) error {
 		balance, err := uc.balanceRepo.Get(ctx, userID)
 		if err != nil {
-			return nil
+			return err
 		}
 		if err = balance.Update(order); err != nil {
 			return err

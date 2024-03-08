@@ -10,12 +10,13 @@ import (
 )
 
 var (
-	ErrOrderExists             = apperrors.NewInvalid("order exists")
-	ErrOrderSavedByAnotherUser = apperrors.NewInvalid("order saved by another user")
-	ErrOrderNotFound           = apperrors.NewNotFound("order not found")
-	ErrOrderStatusInvalid      = entity.ErrOrderStatusInvalid
-	ErrOrderTypeInvalid        = entity.ErrOrderTypeInvalid
-	ErrOrderNumberInvalid      = apperrors.NewInvalid("invalid order number")
+	ErrOrderExists               = apperrors.NewInvalid("order exists")
+	ErrOrderSavedByAnotherUser   = apperrors.NewInvalid("order saved by another user")
+	ErrOrderNotFound             = apperrors.NewNotFound("order not found")
+	ErrOrderStatusInvalid        = entity.ErrOrderStatusInvalid
+	ErrOrderTypeInvalid          = entity.ErrOrderTypeInvalid
+	ErrOrderZeroOrNegativeAmount = entity.ErrOrderZeroOrNegativeAmount
+	ErrOrderNumberInvalid        = apperrors.NewInvalid("invalid order number")
 )
 
 type (
@@ -107,36 +108,33 @@ func (uc *OrderUseCase) Create(
 func (uc *OrderUseCase) UpdateAccrual(
 	ctx context.Context,
 	orderID entity.OrderID,
-) (entity.OrderEvent, error) {
+) (entity.Order, error) {
+	empty := entity.Order{}
+
 	order, err := uc.orderRepo.Get(ctx, orderID)
 	if err != nil {
-		return "", err
+		return empty, err
 	}
 	accrual, err := uc.accrualAPI.Get(ctx, order.Number)
 	if err != nil {
-		return "", err
+		return empty, err
 	}
 
 	if err = order.Update(accrual); err != nil {
-		return "", err
+		return empty, err
 	}
 
-	es := order.Events
-	switch {
-	case es.Contains(entity.Event(entity.OrderEventUpdated)):
-		if err = uc.orderRepo.Update(ctx, order); err != nil {
-			return "", err
-		}
-		return entity.OrderEventUpdated, nil
-	case es.Contains(entity.Event(entity.OrderEventCompleted)):
-		err = uc.completeOrder(ctx, order)
-		if err != nil {
-			return "", err
-		}
-		return entity.OrderEventCompleted, nil
+	switch order.Status {
+	case entity.OrderStatusProcessed:
+		err = uc.updateBalance(ctx, order)
 	default:
-		return "", entity.ErrOrderEventInvalid
+		err = uc.orderRepo.Update(ctx, order)
 	}
+	if err != nil {
+		return empty, err
+	}
+
+	return order, nil
 }
 
 func (uc *OrderUseCase) GetAll(
@@ -146,7 +144,7 @@ func (uc *OrderUseCase) GetAll(
 	return uc.orderRepo.GetAll(ctx, &OrderFilter{UserID: &userID})
 }
 
-func (uc *OrderUseCase) completeOrder(
+func (uc *OrderUseCase) updateBalance(
 	ctx context.Context,
 	order entity.Order,
 ) error {

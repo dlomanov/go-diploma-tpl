@@ -99,7 +99,7 @@ func (s *PollStage) wait(ctx context.Context) error {
 		s.logger.Debug("triggered manually")
 		return nil
 	case <-t.C:
-		s.logger.Debug("triggered by timer")
+		// s.logger.Debug("triggered by timer")
 		return nil
 	case <-ctx.Done():
 		s.logger.Debug("catch cancellation")

@@ -16,13 +16,18 @@ var (
 	ErrJobTypeInvalid = apperrors.NewInvalid("invalid job type")
 
 	delays = []time.Duration{
-		0 * time.Second,
 		1 * time.Second,
 		1 * time.Second,
+		1 * time.Second,
+		2 * time.Second,
+		2 * time.Second,
 		2 * time.Second,
 		3 * time.Second,
 		5 * time.Second,
 		8 * time.Second,
+		8 * time.Second,
+		13 * time.Second,
+		13 * time.Second,
 		13 * time.Second,
 		21 * time.Second,
 		34 * time.Second,
@@ -82,31 +87,27 @@ func (uc *JobUseCase) Fail(
 
 func (uc *JobUseCase) pollAccrual(ctx context.Context, job entity.Job) error {
 	return uc.tx.Do(ctx, func(ctx context.Context) error {
-		event, err := uc.orderUseCase.UpdateAccrual(ctx, entity.OrderID(job.EntityID))
+		order, err := uc.orderUseCase.UpdateAccrual(ctx, entity.OrderID(job.EntityID))
 		switch {
 		case errors.Is(err, entity.ErrOrderStatusFinal):
 			return uc.fail(ctx, job, entity.ErrOrderStatusFinal)
 		case errors.Is(err, ErrOrderNotFound):
 			return uc.fail(ctx, job, ErrOrderNotFound)
-		case errors.Is(err, entity.ErrOrderEventInvalid):
-			return uc.fail(ctx, job, entity.ErrOrderEventInvalid)
 		case err != nil:
 			return err
 		default:
 		}
 
-		switch event {
-		case entity.OrderEventUpdated:
-			now := getNextAttemptAt(job.Attempt)
-			job.Status = entity.JobStatusProcessing
-			job.NextAttemptAt = now
-			return uc.repo.Update(ctx, job)
-		case entity.OrderEventCompleted:
+		switch {
+		case order.Status.Final():
 			job.Status = entity.JobStatusProcessed
 			job.NextAttemptAt = time.Time{}
 			return uc.repo.Update(ctx, job)
 		default:
-			return uc.fail(ctx, job, entity.ErrOrderEventInvalid)
+			next := getNextAttemptAt(job.Attempt)
+			job.Status = entity.JobStatusProcessing
+			job.NextAttemptAt = next
+			return uc.repo.Update(ctx, job)
 		}
 	})
 

@@ -21,6 +21,6 @@ pipeline:
   buffer_size: 10
   handler_count: 2
   shutdown_timeout: "15s"
-  poll_delay: "5m"
+  poll_delay: "1s"
   fix_delay: "5m"
   fix_proc_timeout: "5m"

@@ -47,7 +47,9 @@ func UseOrderEndpoints(router chi.Router, c *deps.Container) {
 // @Success	200		{string}	string	"order processing"
 // @Success	202		{string}	string	"order accepted"
 // @Failure	401		{string}	string	"invalid creds"
+// @Failure	409		{string}	string	"created by another user"
 // @Failure	415		{string}	string	"unsupported content type"
+// @Failure	422		{string}	string	"invalid number"
 // @Failure	500		{string}	string	"internal server error"
 func (e *orderEndpoints) createOrder(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
@@ -115,13 +117,8 @@ func (e *orderEndpoints) getOrders(w http.ResponseWriter, r *http.Request) {
 	default:
 		resp := e.toResponse(orders)
 		w.Header().Set(ContentTypeHeader, ContentTypeJSON)
-		enc := json.NewEncoder(w)
-		for _, v := range resp {
-			err = enc.Encode(v)
-			if err != nil {
-				e.logger.Error("failed to write JSON response", zap.Error(err))
-				break
-			}
+		if err = json.NewEncoder(w).Encode(resp); err != nil {
+			e.logger.Error("failed to write JSON response", zap.Error(err))
 		}
 	}
 }

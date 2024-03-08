@@ -1,6 +1,11 @@
 package app
 
 import (
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/dlomanov/go-diploma-tpl/config"
 	v1 "github.com/dlomanov/go-diploma-tpl/internal/entrypoints/http/v1"
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/deps"
@@ -8,27 +13,28 @@ import (
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/pipeline"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
-func Run(cfg *config.Config) error {
-	c, err := deps.NewContainer(cfg)
+func Run(
+	ctx context.Context,
+	logger *zap.Logger,
+	cfg *config.Config,
+) error {
+	c, err := deps.NewContainer(logger, cfg)
 	if err != nil {
 		return err
 	}
 	defer c.Close()
 
-	c.Logger.Info("run app")
+	logger.Info("run app")
 
 	s := startServer(c)
 	p := startPipeline(c)
-	wait(c, s, p)
+	wait(ctx, c, s, p)
 	shutdownServer(c, s)
 	shutdownPipeline(c, p)
 
-	c.Logger.Debug("app terminated")
+	logger.Info("app terminated")
 	return nil
 }
 
@@ -69,6 +75,7 @@ func shutdownPipeline(c *deps.Container, p *pipeline.Pipeline) {
 }
 
 func wait(
+	ctx context.Context,
 	c *deps.Container,
 	server *httpserver.Server,
 	pipe *pipeline.Pipeline,
@@ -77,6 +84,8 @@ func wait(
 	signal.Notify(terminate, syscall.SIGINT, syscall.SIGTERM)
 
 	select {
+	case <-ctx.Done():
+		c.Logger.Info("cached cancellation", zap.Error(ctx.Err()))
 	case s := <-terminate:
 		c.Logger.Info("cached terminate signal", zap.String("signal", s.String()))
 	case err := <-pipe.Notify():

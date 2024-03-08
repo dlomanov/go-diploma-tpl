@@ -12,7 +12,7 @@ var (
 	ErrBalanceNotEnoughFounds    = errors.New("not enough founds on the balance")
 	ErrBalanceUserInvalid        = errors.New("invalid user")
 	ErrBalanceOrderStatusInvalid = ErrOrderStatusInvalid
-	ErrBalanceOrderAmountInvalid = ErrOrderNegativeAmount
+	ErrBalanceOrderAmountInvalid = ErrOrderZeroOrNegativeAmount
 )
 
 type Balance struct {

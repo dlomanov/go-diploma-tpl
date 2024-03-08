@@ -29,10 +29,9 @@ type (
 	}
 
 	Logger struct {
-		LoggerType LoggerType `yaml:"type" env:"LOGGER_TYPE"`
-		LogLevel   string     `yaml:"level" env:"LOG_LEVEL"`
+		LoggerType string `yaml:"type" env:"LOGGER_TYPE"`
+		LogLevel   string `yaml:"level" env:"LOG_LEVEL"`
 	}
-	LoggerType string
 
 	PG struct {
 		DatabaseURI string `yaml:"url" env:"DATABASE_URI"`
@@ -57,15 +56,10 @@ type (
 	}
 )
 
-const (
-	LoggerTypeDevelopment LoggerType = "development"
-	LoggerTypeProduction  LoggerType = "production"
-)
-
 //go:embed config.yml
 var configFile embed.FS
 
-func NewConfig() *Config {
+func New() *Config {
 	cfg := new(Config)
 
 	parseFile := func() error {
@@ -94,6 +88,24 @@ func NewConfig() *Config {
 		log.Fatal(err)
 	}
 
+	return cfg
+}
+
+func NewFromYAML() *Config {
+	cfg := new(Config)
+
+	parseFile := func() error {
+		file, err := configFile.Open("config.yml")
+		if err != nil {
+			return err
+		}
+		defer func(f fs.File) { _ = f.Close() }(file)
+
+		return cleanenv.ParseYAML(file, cfg)
+	}
+	if err := parseFile(); err != nil {
+		log.Fatal(err)
+	}
 	return cfg
 }
 

@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "title": "gophermart API",
+        "title": "gophermart AccrualAPI",
         "contact": {},
         "version": "1.0"
     },
@@ -264,8 +264,20 @@
                             "type": "string"
                         }
                     },
+                    "409": {
+                        "description": "created by another user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     "415": {
                         "description": "unsupported content type",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "422": {
+                        "description": "invalid number",
                         "schema": {
                             "type": "string"
                         }
@@ -317,8 +329,8 @@
                             "$ref": "#/definitions/endpoints.loginErrorResponse"
                         }
                     },
-                    "401": {
-                        "description": "invalid creds",
+                    "409": {
+                        "description": "user already registered",
                         "schema": {
                             "type": "string"
                         }

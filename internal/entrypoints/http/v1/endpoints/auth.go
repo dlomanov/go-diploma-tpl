@@ -46,7 +46,7 @@ func UseAuthEndpoints(router chi.Router, c *deps.Container) {
 //
 // @Success	200		{string}	string							"ok"
 // @Failure	400		{object}	endpoints.loginErrorResponse	"validation failed"
-// @Failure	401		{string}	string							"invalid creds"
+// @Failure	409		{string}	string							"user already registered"
 // @Failure	415		{string}	string							"unsupported content type"
 // @Failure	500		{string}	string							"internal server error"
 //

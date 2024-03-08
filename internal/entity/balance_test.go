@@ -1,8 +1,9 @@
-package entity
+package entity_test
 
 import (
 	"testing"
 
+	"github.com/dlomanov/go-diploma-tpl/internal/entity"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
@@ -10,7 +11,7 @@ import (
 
 func TestNewBalance(t *testing.T) {
 	userID := newUserID()
-	balance := NewBalance(UserID(userID))
+	balance := entity.NewBalance(entity.UserID(userID))
 
 	require.Equal(t, uuid.UUID(userID), uuid.UUID(balance.UserID), "UserID mismatch")
 	require.Equal(t, decimal.Zero, balance.Current, "Current balance is not zero")
@@ -20,11 +21,11 @@ func TestNewBalance(t *testing.T) {
 }
 
 func TestBalanceUpdate(t *testing.T) {
-	balance := NewBalance(newUserID())
-	tempNumber := OrderNumber("temp")
+	balance := entity.NewBalance(newUserID())
+	tempNumber := entity.OrderNumber("temp")
 
 	type args struct {
-		order *Order
+		order *entity.Order
 	}
 	type want struct {
 		err error
@@ -37,35 +38,35 @@ func TestBalanceUpdate(t *testing.T) {
 		{
 			name: "invalid user",
 			args: args{
-				order: must(t, func() (any, error) { return NewIncomeOrder(tempNumber, newUserID()) }).(*Order),
+				order: must(t, func() (any, error) { return entity.NewIncomeOrder(tempNumber, newUserID()) }).(*entity.Order),
 			},
 			want: want{
-				err: ErrBalanceUserInvalid,
+				err: entity.ErrBalanceUserInvalid,
 			},
 		},
 		{
 			name: "invalid status",
 			args: args{
-				order: must(t, func() (any, error) { return NewIncomeOrder(tempNumber, balance.UserID) }).(*Order),
+				order: must(t, func() (any, error) { return entity.NewIncomeOrder(tempNumber, balance.UserID) }).(*entity.Order),
 			},
 			want: want{
-				err: ErrBalanceOrderStatusInvalid,
+				err: entity.ErrBalanceOrderStatusInvalid,
 			},
 		},
 		{
 			name: "invalid amount",
 			args: args{
 				order: must(t, func() (any, error) {
-					o, err := NewOutcomeOrder(tempNumber, decimal.NewFromInt(0), balance.UserID)
+					o, err := entity.NewOutcomeOrder(tempNumber, decimal.NewFromInt(1), balance.UserID)
 					if err != nil {
 						return nil, err
 					}
 					o.Amount = decimal.NewFromInt(-1)
 					return o, nil
-				}).(*Order),
+				}).(*entity.Order),
 			},
 			want: want{
-				err: ErrBalanceOrderAmountInvalid,
+				err: entity.ErrBalanceOrderAmountInvalid,
 			},
 		},
 	}
@@ -84,6 +85,6 @@ func must(t *testing.T, f func() (any, error)) any {
 	return v
 }
 
-func newUserID() UserID {
-	return UserID(uuid.New())
+func newUserID() entity.UserID {
+	return entity.UserID(uuid.New())
 }

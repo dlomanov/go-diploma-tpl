@@ -17,7 +17,7 @@ const (
 
 func Auth(c *deps.Container) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fn := func(w http.ResponseWriter, r *http.Request) {
 			h := r.Header.Get(authHeader)
 			if !strings.HasPrefix(h, authSchema) {
 				c.Logger.Debug("request without authorization header")
@@ -36,6 +36,7 @@ func Auth(c *deps.Container) func(http.Handler) http.Handler {
 			r.Header.Set(UserIDHeader, uuid.UUID(userID).String())
 
 			next.ServeHTTP(w, r)
-		})
+		}
+		return http.HandlerFunc(fn)
 	}
 }

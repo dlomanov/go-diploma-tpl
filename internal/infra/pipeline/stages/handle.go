@@ -71,10 +71,12 @@ func (s *HandleStage) worker(
 		job      entity.Job
 		open     bool
 		handle   = func(job entity.Job) error {
+			jobID := zap.String("job_id", job.ID.String())
 			err := s.retry(ctx, func() error {
 				return handler.Handle(ctx, job)
 			})
 			if err != nil {
+				s.logger.Debug("handler returns err", workerID, jobID, zap.Error(err))
 				return handler.Fail(ctx, job, err)
 			}
 			return nil

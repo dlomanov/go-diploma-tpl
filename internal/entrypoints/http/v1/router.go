@@ -20,6 +20,8 @@ func NewRouter(r chi.Router, c *deps.Container) {
 	endpoints.UseSwagger(r, c)
 	endpoints.UseAuthEndpoints(r, c)
 
+	middleware.AllowContentType()
+
 	r.Group(func(r chi.Router) {
 		r.Use(middlewares.Auth(c))
 		endpoints.UseOrderEndpoints(r, c)

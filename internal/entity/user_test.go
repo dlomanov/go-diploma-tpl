@@ -1,18 +1,19 @@
-package entity
+package entity_test
 
 import (
 	"testing"
 
+	"github.com/dlomanov/go-diploma-tpl/internal/entity"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewUser(t *testing.T) {
-	creds := HashCreds{
+	creds := entity.HashCreds{
 		Login:    "testUser",
 		PassHash: "hashedPassword",
 	}
 
-	user, err := NewUser(creds)
+	user, err := entity.NewUser(creds)
 	require.NoError(t, err, "error creating new user")
 	require.NotNil(t, user, "user should not be nil")
 	require.Equal(t, creds, user.HashCreds, "hash creds mismatch")
@@ -22,17 +23,17 @@ func TestNewUser(t *testing.T) {
 func TestTokenValid(t *testing.T) {
 	tests := []struct {
 		name  string
-		token Token
+		token entity.Token
 		want  bool
 	}{
 		{
 			name:  "valid token",
-			token: Token("validToken"),
+			token: entity.Token("validToken"),
 			want:  true,
 		},
 		{
 			name:  "invalid token",
-			token: Token(""),
+			token: entity.Token(""),
 			want:  false,
 		},
 	}
@@ -47,12 +48,12 @@ func TestTokenValid(t *testing.T) {
 func TestCredsValid(t *testing.T) {
 	tests := []struct {
 		name  string
-		creds Creds
+		creds entity.Creds
 		want  bool
 	}{
 		{
 			name: "valid creds",
-			creds: Creds{
+			creds: entity.Creds{
 				Login: "testUser",
 				Pass:  "password",
 			},
@@ -60,7 +61,7 @@ func TestCredsValid(t *testing.T) {
 		},
 		{
 			name: "invalid creds",
-			creds: Creds{
+			creds: entity.Creds{
 				Login: "",
 				Pass:  "password",
 			},

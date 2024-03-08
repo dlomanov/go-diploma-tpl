@@ -116,6 +116,8 @@ func (e *balanceEndpoints) withdraw(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case errors.Is(err, usecase.ErrOrderNumberInvalid):
 		w.WriteHeader(http.StatusUnprocessableEntity)
+	case errors.Is(err, usecase.ErrOrderZeroOrNegativeAmount):
+		w.WriteHeader(http.StatusUnprocessableEntity)
 	case errors.Is(err, usecase.ErrOrderExists):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Is(err, entity.ErrBalanceNotEnoughFounds):
@@ -156,13 +158,8 @@ func (e *balanceEndpoints) getWithdrawals(w http.ResponseWriter, r *http.Request
 	default:
 		resp := e.toResponse(orders)
 		w.Header().Set(ContentTypeHeader, ContentTypeJSON)
-		enc := json.NewEncoder(w)
-		for _, v := range resp {
-			err = enc.Encode(v)
-			if err != nil {
-				e.logger.Error("failed to write JSON response", zap.Error(err))
-				break
-			}
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			e.logger.Error("failed to write JSON response", zap.Error(err))
 		}
 	}
 }
