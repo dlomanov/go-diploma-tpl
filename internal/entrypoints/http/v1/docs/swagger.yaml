@@ -2,9 +2,9 @@ definitions:
   endpoints.balanceResponse:
     properties:
       current:
-        type: string
+        type: number
       withdrawn:
-        type: string
+        type: number
     type: object
   endpoints.loginErrorResponse:
     properties:
@@ -23,7 +23,7 @@ definitions:
   endpoints.orderResponse:
     properties:
       accrual:
-        type: string
+        type: number
       number:
         type: string
       status:
@@ -45,7 +45,7 @@ definitions:
       processed_at:
         type: string
       sum:
-        type: string
+        type: number
     type: object
 info:
   contact: {}

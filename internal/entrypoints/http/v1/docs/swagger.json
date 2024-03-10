@@ -407,10 +407,10 @@
             "type": "object",
             "properties": {
                 "current": {
-                    "type": "string"
+                    "type": "number"
                 },
                 "withdrawn": {
-                    "type": "string"
+                    "type": "number"
                 }
             }
         },
@@ -440,7 +440,7 @@
             "type": "object",
             "properties": {
                 "accrual": {
-                    "type": "string"
+                    "type": "number"
                 },
                 "number": {
                     "type": "string"
@@ -474,7 +474,7 @@
                     "type": "string"
                 },
                 "sum": {
-                    "type": "string"
+                    "type": "number"
                 }
             }
         }

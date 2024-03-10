@@ -416,10 +416,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "current": {
-                    "type": "string"
+                    "type": "number"
                 },
                 "withdrawn": {
-                    "type": "string"
+                    "type": "number"
                 }
             }
         },
@@ -449,7 +449,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "accrual": {
-                    "type": "string"
+                    "type": "number"
                 },
                 "number": {
                     "type": "string"
@@ -483,7 +483,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "sum": {
-                    "type": "string"
+                    "type": "number"
                 }
             }
         }
