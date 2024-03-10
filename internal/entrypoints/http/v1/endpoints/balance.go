@@ -20,17 +20,17 @@ type (
 		balanceUseCase *usecase.BalanceUseCase
 	}
 	balanceResponse struct {
-		Current   decimal.Decimal `json:"current,omitempty"`
-		Withdrawn decimal.Decimal `json:"withdrawn,omitempty"`
+		Current   float64 `json:"current,omitempty"`
+		Withdrawn float64 `json:"withdrawn,omitempty"`
 	}
 	withdrawRequest struct {
 		Order string          `json:"order"`
 		Sum   decimal.Decimal `json:"sum"`
 	}
 	withdrawResponse struct {
-		Order       string          `json:"order"`
-		Sum         decimal.Decimal `json:"sum"`
-		ProcessedAt string          `json:"processed_at"`
+		Order       string  `json:"order"`
+		Sum         float64 `json:"sum"`
+		ProcessedAt string  `json:"processed_at"`
 	}
 )
 
@@ -67,8 +67,8 @@ func (e *balanceEndpoints) getBalance(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.Header().Set(ContentTypeHeader, ContentTypeJSON)
 		if err = json.NewEncoder(w).Encode(balanceResponse{
-			Current:   balance.Current,
-			Withdrawn: balance.Withdrawn,
+			Current:   balance.Current.InexactFloat64(),
+			Withdrawn: balance.Withdrawn.InexactFloat64(),
 		}); err != nil {
 			e.logger.Error("failed to writer JSON response", zap.Error(err))
 		}
@@ -169,7 +169,7 @@ func (*balanceEndpoints) toResponse(orders []entity.Order) []withdrawResponse {
 	for i, v := range orders {
 		res[i] = withdrawResponse{
 			Order:       string(v.Number),
-			Sum:         v.Amount,
+			Sum:         v.Amount.InexactFloat64(),
 			ProcessedAt: v.UpdatedAt.Format(time.RFC3339),
 		}
 	}

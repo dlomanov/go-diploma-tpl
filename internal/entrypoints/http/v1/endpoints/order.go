@@ -11,7 +11,6 @@ import (
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/deps"
 	"github.com/dlomanov/go-diploma-tpl/internal/usecase"
 	"github.com/go-chi/chi/v5"
-	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -21,10 +20,10 @@ type (
 		orderUseCase *usecase.OrderUseCase
 	}
 	orderResponse struct {
-		Number     string          `json:"number,omitempty"`
-		Status     string          `json:"status,omitempty"`
-		Accrual    decimal.Decimal `json:"accrual,omitempty"`
-		UploadedAt string          `json:"uploaded_at,omitempty"`
+		Number     string  `json:"number,omitempty"`
+		Status     string  `json:"status,omitempty"`
+		Accrual    float64 `json:"accrual,omitempty"`
+		UploadedAt string  `json:"uploaded_at,omitempty"`
 	}
 )
 
@@ -133,7 +132,7 @@ func (*orderEndpoints) toResponse(orders []entity.Order) []orderResponse {
 			UploadedAt: v.CreatedAt.Format(time.RFC3339),
 		}
 		if v.Status == entity.OrderStatusProcessed {
-			or.Accrual = v.Amount
+			or.Accrual = v.Amount.InexactFloat64()
 		}
 		res[i] = or
 	}
