@@ -1,9 +1,10 @@
 package checksum_test
 
 import (
+	"testing"
+
 	"github.com/dlomanov/go-diploma-tpl/internal/infra/services/checksum"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestValidateLuhn(t *testing.T) {
@@ -19,6 +20,7 @@ func TestValidateLuhn(t *testing.T) {
 		{"5", "471629309440", false},
 		{"6", "1111", false},
 		{"7", "12345674", true},
+		{"8", "28380720368", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

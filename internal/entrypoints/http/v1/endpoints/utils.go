@@ -1,12 +1,13 @@
 package endpoints
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/dlomanov/go-diploma-tpl/internal/entity"
 	"github.com/dlomanov/go-diploma-tpl/internal/entity/apperrors"
 	"github.com/dlomanov/go-diploma-tpl/internal/entrypoints/http/middlewares"
 	"github.com/google/uuid"
-	"net/http"
-	"strings"
 )
 
 const (
