@@ -1,0 +1,26 @@
+app:
+  pass_hash_cost: 5
+  token_secret_key: "fb3299df-48c6-4fa3-9a72-b80f2a5a79f6"
+  token_expires: "15m"
+
+logger:
+  level: 'debug'
+  type: 'development'
+
+postgres:
+  url: 'host=localhost port=5432 user=postgres password=1 dbname=go_diploma sslmode=disable'
+
+server:
+  address: 'localhost:6001'
+
+accrual_api:
+  address: 'localhost:6002'
+  shutdown_timeout: "15s"
+
+pipeline:
+  buffer_size: 10
+  handler_count: 2
+  shutdown_timeout: "15s"
+  poll_delay: "1s"
+  fix_delay: "5m"
+  fix_proc_timeout: "5m"

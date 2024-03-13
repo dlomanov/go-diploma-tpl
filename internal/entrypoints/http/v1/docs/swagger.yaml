@@ -1,0 +1,311 @@
+definitions:
+  endpoints.balanceResponse:
+    properties:
+      current:
+        type: number
+      withdrawn:
+        type: number
+    type: object
+  endpoints.loginErrorResponse:
+    properties:
+      validation_errors:
+        items:
+          type: string
+        type: array
+    type: object
+  endpoints.loginRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  endpoints.orderResponse:
+    properties:
+      accrual:
+        type: number
+      number:
+        type: string
+      status:
+        type: string
+      uploaded_at:
+        type: string
+    type: object
+  endpoints.withdrawRequest:
+    properties:
+      order:
+        type: string
+      sum:
+        type: number
+    type: object
+  endpoints.withdrawResponse:
+    properties:
+      order:
+        type: string
+      processed_at:
+        type: string
+      sum:
+        type: number
+    type: object
+info:
+  contact: {}
+  title: gophermart AccrualAPI
+  version: "1.0"
+paths:
+  /api/user/balance:
+    get:
+      parameters:
+      - description: token with Bearer schema
+        in: header
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            $ref: '#/definitions/endpoints.balanceResponse'
+        "401":
+          description: invalid token
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      tags:
+      - balance
+  /api/user/balance/withdraw:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: order number and withdraw sum
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/endpoints.withdrawRequest'
+      - description: token with Bearer schema
+        in: header
+        name: token
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+        "401":
+          description: invalid creds
+          schema:
+            type: string
+        "402":
+          description: not enough founds
+          schema:
+            type: string
+        "415":
+          description: unsupported content type
+          schema:
+            type: string
+        "422":
+          description: invalid order number
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      tags:
+      - balance
+  /api/user/login:
+    post:
+      parameters:
+      - description: user creds
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/endpoints.loginRequest'
+      responses:
+        "200":
+          description: ok
+          headers:
+            Authorization:
+              description: <schema> <token>
+              type: string
+          schema:
+            type: string
+        "400":
+          description: validation failed
+          schema:
+            $ref: '#/definitions/endpoints.loginErrorResponse'
+        "401":
+          description: invalid creds
+          schema:
+            type: string
+        "415":
+          description: unsupported content type
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      tags:
+      - auth
+  /api/user/orders:
+    get:
+      parameters:
+      - description: token with Bearer schema
+        in: header
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: orders
+          schema:
+            items:
+              $ref: '#/definitions/endpoints.orderResponse'
+            type: array
+        "204":
+          description: no result
+          schema:
+            type: string
+        "401":
+          description: invalid creds
+          schema:
+            type: string
+        "415":
+          description: unsupported content type
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      tags:
+      - orders
+    post:
+      consumes:
+      - text/plain
+      parameters:
+      - description: order number
+        in: body
+        name: request
+        required: true
+        schema:
+          type: string
+      - description: token with Bearer schema
+        in: header
+        name: token
+        required: true
+        type: string
+      responses:
+        "200":
+          description: order processing
+          schema:
+            type: string
+        "202":
+          description: order accepted
+          schema:
+            type: string
+        "401":
+          description: invalid creds
+          schema:
+            type: string
+        "409":
+          description: created by another user
+          schema:
+            type: string
+        "415":
+          description: unsupported content type
+          schema:
+            type: string
+        "422":
+          description: invalid number
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      tags:
+      - orders
+  /api/user/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: user creds
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/endpoints.loginRequest'
+      responses:
+        "200":
+          description: ok
+          headers:
+            Authorization:
+              description: <schema> <token>
+              type: string
+          schema:
+            type: string
+        "400":
+          description: validation failed
+          schema:
+            $ref: '#/definitions/endpoints.loginErrorResponse'
+        "409":
+          description: user already registered
+          schema:
+            type: string
+        "415":
+          description: unsupported content type
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      tags:
+      - auth
+  /api/user/withdrawals:
+    get:
+      parameters:
+      - description: token with Bearer schema
+        in: header
+        name: token
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ok
+          schema:
+            items:
+              $ref: '#/definitions/endpoints.withdrawResponse'
+            type: array
+        "204":
+          description: no result
+          schema:
+            type: string
+        "401":
+          description: invalid creds
+          schema:
+            type: string
+        "415":
+          description: unsupported content type
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      tags:
+      - withdrawals
+swagger: "2.0"
